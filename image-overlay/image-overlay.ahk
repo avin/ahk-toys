@@ -36,9 +36,15 @@ Return
 #[::
     ChangeTransparency(-10)
 Return
+^#[::
+    ChangeTransparency(-250)
+Return
 
 #]::
     ChangeTransparency(10)
+Return
+^#]::
+    ChangeTransparency(+250)
 Return
 
 Esc::
