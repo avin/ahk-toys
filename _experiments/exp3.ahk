@@ -1,98 +1,87 @@
-#SingleInstance, Force
-SendMode Input
-SetWorkingDir, %A_ScriptDir%
-;-------
+#NoEnv
+SetBatchLines -1
 
-;OnMessage(0x84, "WM_NCHITTEST")
-;OnMessage(0x83, "WM_NCCALCSIZE")
-gui, color, 000000
+CoordMode Mouse, Screen
+OnExit GuiClose
+zoom = 2 ; initial magnification, 1..32
+antialize = 0
+Rx = 128 ; half vertical/horizontal side of magnifier window
+Ry = 128
+Zx := Rx/zoom ; frame x/y size
+Zy := Ry/zoom
+; GUI to show the magnified image
+Gui +AlwaysOnTop +Resize +ToolWindow
+Gui Show, % "w" 2*Rx " h" 2*Ry " x0 y0", Magnifier
+WinGet MagnifierID, id, Magnifier
+WinSet Transparent, 255, Magnifier ; makes the window invisible to magnification
+WinGet PrintSourceID, ID
 
-Gui +hwndgui2id
-Gui +LastFound +ToolWindow +AlwaysOnTop
-WinSet, Transparent, 100
+hdd_frame := DllCall("GetDC", UInt, PrintSourceID)
+hdc_frame := DllCall("GetDC", UInt, MagnifierID)
 
-Gui, +resize MinSize200x200
-Gui, Show, w300 h300, FooBar
-WinGet, active_id, ID, FooBar
-;WinSet, Style, ^0x40000, ahk_id %active_id%
-return
+SetTimer Repaint, 50 ; flow through
 
-; Gui, Show, x800 y20, Transparent Help Menu
-; WinGet, active_id, ID, Transparent Help Menu
-; WinSet, AlwaysOnTop, On, ahk_id %active_id%
-; WinSet, Transparent, 190, ahk_id %active_id%
-; WinSet, ExStyle, +0x80020,ahk_id %active_id%
-
-esc::
-exitapp
-
-#m::
-    SoundBeep,
-    ; WinSet, ExStyle, +E0x20, ahk_id %gui2id%
-    ; MsgBox, %active_id%
-    WinSet, ExStyle, +0x80020,ahk_id %active_id%
+Repaint:
+    MouseGetPos x, y
+    xz := In(x-Zx-6,0,A_ScreenWidth-2*Zx) ; keep the frame on screen
+    yz := In(y-Zy-6,0,A_ScreenHeight-2*Zy)
+    ; WinMove Frame,,%xz%, %yz%, % 2*Zx, % 2*Zy
+    DllCall("gdi32.dll\StretchBlt", UInt,hdc_frame, Int,0, Int,0, Int,2*Rx, Int,2*Ry
+    , UInt,hdd_frame, UInt,xz, UInt,yz, Int,2*Zx, Int,2*Zy, UInt,0xCC0020) ; SRCCOPY
 Return
 
-!#m::
-    SoundBeep, 300, 200
-    ; WinSet, ExStyle, +E0x20, ahk_id %gui2id%
-    ; MsgBox, %active_id%
-    WinSet, ExStyle, -0x20,ahk_id %active_id%
+GuiSize:
+    Rx := A_GuiWidth/2
+    Ry := A_GuiHeight/2
+    Zx := Rx/zoom
+    Zy := Ry/zoom
+    TrayTip,,% "Frame = " Round(2*Zx) " ? " Round(2*Zy) "`nMagnified to = " A_GuiWidth "?" A_GuiHeight
 Return
 
-WM_NCCALCSIZE()
-{
-    if A_Gui {
-        return 0 ; Sizes the client area to fill the entire window.
-    }
-}
+#a::
+    antialize := !antialize
+    DllCall( "gdi32.dll\SetStretchBltMode", "uint", hdc_frame, "int", 4*antialize ) ; Antializing ?
+Return
 
-; Redefine where the sizing borders are.  This is necessary since
-; returning 0 for WM_NCCALCSIZE effectively gives borders zero size.
+#x::
+GuiClose:
+    DllCall("gdi32.dll\DeleteDC", UInt,hdc_frame )
+    DllCall("gdi32.dll\DeleteDC", UInt,hdd_frame )
+ExitApp
 
-WM_NCHITTEST(wParam, lParam)
-{
-    static border_size = 6
-
-    if !A_Gui {
-        return
-    }
-
-    WinGetPos, gX, gY, gW, gH
-
-    x := lParam<<48>>48, y := lParam<<32>>48
-
-    hit_left := x < gX+border_size
-    hit_right := x >= gX+gW-border_size
-    hit_top := y < gY+border_size
-    hit_bottom := y >= gY+gH-border_size
-
-    if hit_top
+#p::
+MButton::
+    if paused =
     {
-        if hit_left {
-            return 0xD
-        } else if hit_right {
-            return 0xE
-        } else {
-            return 0xC
-        }
-
+        Gui, 2:Hide
+        Gui, Hide
+        SetTimer, Repaint, Off
+        paused = 1
     }
-    else if hit_bottom
+    else
     {
-        if hit_left {
-            return 0x10
-        } else if hit_right {
-            return 0x11
-        } else {
-            return 0xF
-        }
+        Gui, 2:Show
+        Gui, Show
+        SetTimer, Repaint, 50
+        paused =
     }
-    else if hit_left {
-        return 0xA
-    } else if hit_right {
-        return 0xB
-    }
+Return
 
-    ; else let default hit-testing be done
+^+Up::
+^+Down::
+^+WheelUp:: ; Ctrl+Shift+WheelUp to zoom in
+^+WheelDown:: ; Ctrl+Shift+WheelUp to zoom out
+    If (zoom < 31 and ( A_ThisHotKey = "^+WheelUp" or A_ThisHotKey = "^+Up" ))
+        zoom *= 1.189207115 ; sqrt(sqrt(2))
+    If (zoom > 1 and ( A_ThisHotKey = "^+WheelDown" or A_ThisHotKey = "^+Down" ))
+        zoom /= 1.189207115
+    Zx := Rx/zoom
+    Zy := Ry/zoom
+    TrayTip,,% "Zoom = " Round(100*zoom) "%"
+Return
+
+In(x,a,b) { ; closest number to x in [a,b]
+IfLess x,%a%, Return a
+IfLess b,%x%, Return b
+Return x
 }
