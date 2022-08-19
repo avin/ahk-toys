@@ -3,18 +3,14 @@ SetBatchLines -1
 
 CoordMode Mouse, Screen
 OnExit GuiClose
-zoom = 1 ; initial magnification, 1..32
-antialize = 0
-Rx = 256 ; half vertical/horizontal side of magnifier window
-Ry = 256
-; GUI to show the magnified image
-; Gui +AlwaysOnTop +Resize
+
+Rx = 600
+Ry = 600
 Gui -Caption +AlwaysOnTop
-; Gui +AlwaysOnTop -Caption -DPIScale +LastFound -Border +Resize
 Gui Margin, 0,0
 Gui Show, % "w" Rx " h" Ry " x0 y0", Magnifier
 WinGet MagnifierID, id, Magnifier
-WinSet Transparent, 100, Magnifier ; makes the window invisible to magnification
+WinSet Transparent, 255, Magnifier ; makes the window invisible to magnification
 WinGet PrintSourceID, ID
 OnMessage( 0x200, "WM_MOUSEMOVE" )
 
@@ -26,7 +22,7 @@ Return
 
 Repaint:
     WinGetPos x, y,w,h, Magnifier
-    ;x += w ; TODO убрать!
+    x += w ; TODO убрать!
 
     xz := x
     yz := y

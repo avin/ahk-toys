@@ -1,39 +1,43 @@
-#Persistent
+#SingleInstance, Force ; Force the script to close any other instances of this script. (Run one copy at a time)
+SetBatchLines, -1 ;Set the script to run at top speed.
+CoordMode, Mouse , Screen ;Use the screen as the refrence to get positions from.
 ;-------
 
 Gui, Main: +AlwaysOnTop +resize MinSize200x200
-Gui, Main: Show, w300 h300, DragZone
+Gui, Main: Show, w600 h600, DragZone
 Gui, Main: Font, cRed s18, verdana
 Gui, Main: Add, Text, center, Win+M to start
 WinGet, mainWin_id, ID, A
 
 Global SwitchedOn := 0
 
-Gosub, BORDER
+border_thickness = 4
+border_color = FFF000
+
+Gosub, DrawBroadcastWin
 return
 
 #m::
     if(SwitchedOn){
         SwitchedOn:=0
-        SoundBeep, 300, 200
         WinSet, ExStyle, -0x20,ahk_id %mainWin_id%
         WinSet, Transparent, 255, ahk_id %mainWin_id%
+
+        Gui, Border: Destroy
     } else {
         SwitchedOn:=1
-        SoundBeep,
         WinSet, ExStyle, ^0x20, ahk_id %mainWin_id%
         WinSet, Transparent, 0, ahk_id %mainWin_id%
+
+        WinGetPos x, y,w,h, ahk_id %mainWin_id%
+        WinMove, BroadcastWin, , px, py, w, h
+
+        Gosub, DrawBorderWin
     }
 
 Return
 
-BORDER:
-    SetTimer, DrawRect, 50
-    border_thickness = 4
-    border_color = FF0000
-Return
-
-DrawRect:
+DrawBorderWin:
     WinGetPos, x, y, w, h, ahk_id %mainWin_id%
     if (x="") {
         return
@@ -44,14 +48,14 @@ DrawRect:
     {
 
         ; Gui, Border: +Lastfound +AlwaysOnTop +Toolwindow
-        Gui, Border: +AlwaysOnTop +Lastfound
+        Gui, Border: +AlwaysOnTop +Lastfound +ToolWindow
         iw:= w + border_thickness
         ih:= h + border_thickness
         w:= w + ( border_thickness * 2 )
         h:= h + ( border_thickness * 2 )
         x:= x - border_thickness
         y:= y - border_thickness
-        Gui, Border: Color, FF0000
+        Gui, Border: Color, % border_color
         Gui, Border: -Caption
 
         ; outer rectangle
@@ -80,13 +84,56 @@ DrawRect:
 
         ; Draw outer & inner window(s)
         WinSet, Region, %o1a%-%o1b% %o2a%-%o2b% %o3a%-%o3b% %o4a%-%o4b% %o5a%-%o5b% %i1a%-%i1b% %i2a%-%i2b% %i3a%-%i3b% %i4a%-%i4b% %i5a%-%i5b%
-        Gui, Border: Show, w%w% h%h% x%x% y%y% NoActivate, BroadcastZone
+        Gui, Border: Show, w%w% h%h% x%x% y%y% NoActivate, BorderWin
 
     } else {
         WinSet, Region, 0-0 0-0 0-0 0-0 0-0 0-0 0-0 0-0 0-0 0-0
-        Gui, Border: Show, w0 h0 x0 y0 NoActivate, BroadcastZone
+        Gui, Border: Show, w0 h0 x0 y0 NoActivate, BorderWin
     }
 return
+
+DrawBroadcastWin:
+    Rx = 256
+    Ry = 256
+    Gui BroadcastWin: New, -Caption +AlwaysOnTop hwndBroadcastWinHwnd
+    Gui BroadcastWin: Margin, 0,0
+    Gui BroadcastWin: Show, % "w" Rx " h" Ry " x0 y0", BroadcastWin
+    ;WinGet MagnifierID, id, Magnifier
+    WinSet Transparent, 0, ahk_id %BroadcastWinHwnd% ; makes the window invisible to magnification
+    WinGet PrintSourceID, ID
+    WinSet, ExStyle, +0x80020, ahk_id %BroadcastWinHwnd%
+
+    hdd_frame := DllCall("GetDC", UInt, PrintSourceID)
+    hdc_frame := DllCall("GetDC", UInt, BroadcastWinHwnd)
+
+    SetTimer RepaintBroadcastWindow, 16 ; 16=60fps
+Return
+
+RepaintBroadcastWindow:
+    WinGetPos x, y,w,h, ahk_id %mainWin_id%
+    ;px:=x+w
+    px:=x
+    py:=y
+
+    xz := x
+    yz := y
+
+    ; DllCall("gdi32.dll\StretchBlt", UInt,hdc_frame, Int,0, Int,0, Int,Rx, Int,Ry
+    ; , UInt,hdd_frame, UInt,xz, UInt,yz, Int,Rx, Int,Ry, UInt,0xCC0020)
+
+    DllCall("gdi32.dll\BitBlt", UInt,hdc_frame, Int,0, Int,0, Int,Rx, Int,Ry
+    , UInt,hdd_frame, UInt,xz, UInt,yz, UInt,0xCC0020)
+Return
+
+BroadcastWinGuiSize:
+    Rx := A_GuiWidth
+    Ry := A_GuiHeight
+Return
+
+BroadcastWinGuiClose:
+    DllCall("gdi32.dll\DeleteDC", UInt,hdc_frame )
+    DllCall("gdi32.dll\DeleteDC", UInt,hdd_frame )
+Return
 
 MainGuiClose:
 ExitApp
