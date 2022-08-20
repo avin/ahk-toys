@@ -1,87 +1,81 @@
-﻿#NoEnv
+﻿; gdi+ ahk tutorial 1 written by tic (Tariq Porter)
+; Requires Gdip.ahk either in your Lib folder as standard library or using #Include
+;
+; Tutorial to draw a single ellipse and rectangle to the screen
+
+#SingleInstance Force
+#NoEnv
 SetBatchLines -1
 
-CoordMode Mouse, Screen
-OnExit GuiClose
-zoom = 2 ; initial magnification, 1..32
-antialize = 0
-Rx = 128 ; half vertical/horizontal side of magnifier window
-Ry = 128
-Zx := Rx/zoom ; frame x/y size
-Zy := Ry/zoom
-; GUI to show the magnified image
-Gui +AlwaysOnTop +Resize +ToolWindow
-Gui Show, % "w" 2*Rx " h" 2*Ry " x0 y0", Magnifier
-WinGet MagnifierID, id, Magnifier
-WinSet Transparent, 255, Magnifier ; makes the window invisible to magnification
-WinGet PrintSourceID, ID
+; Uncomment if Gdip.ahk is not in your standard library
+#Include ../_lib/Gdip_All.ahk
 
-hdd_frame := DllCall("GetDC", UInt, PrintSourceID)
-hdc_frame := DllCall("GetDC", UInt, MagnifierID)
+; Start gdi+
+If !pToken := Gdip_Startup()
+{
+    MsgBox "Gdiplus failed to start. Please ensure you have gdiplus on your system"
+    ExitApp
+}
+OnExit("ExitFunc")
 
-SetTimer Repaint, 50 ; flow through
+; Set the width and height we want as our drawing area, to draw everything in. This will be the dimensions of our bitmap
+Width :=1400, Height := 1050
 
-Repaint:
-    MouseGetPos x, y
-    xz := In(x-Zx-6,0,A_ScreenWidth-2*Zx) ; keep the frame on screen
-    yz := In(y-Zy-6,0,A_ScreenHeight-2*Zy)
-    ; WinMove Frame,,%xz%, %yz%, % 2*Zx, % 2*Zy
-    DllCall("gdi32.dll\StretchBlt", UInt,hdc_frame, Int,0, Int,0, Int,2*Rx, Int,2*Ry
-    , UInt,hdd_frame, UInt,xz, UInt,yz, Int,2*Zx, Int,2*Zy, UInt,0xCC0020) ; SRCCOPY
+; Create a layered window (+E0x80000 : must be used for UpdateLayeredWindow to work!) that is always on top (+AlwaysOnTop), has no taskbar entry or caption
+;Gui, 1: -Caption +E0x80000 +LastFound +AlwaysOnTop +ToolWindow +OwnDialogs
+Gui, 1: New, +E0x80000 +LastFound +AlwaysOnTop , App
+Gui, 1: Show, NA
+
+; Get a handle to this window we have created in order to update it later
+hwnd1 := WinExist()
+
+; Create a gdi bitmap with width and height of what we are going to draw into it. This is the entire drawing area for everything
+hbm := CreateDIBSection(Width, Height)
+
+; Get a device context compatible with the screen
+hdc := CreateCompatibleDC()
+
+; Select the bitmap into the device context
+obm := SelectObject(hdc, hbm)
+
+; Get a pointer to the graphics of the bitmap, for use with drawing functions
+G := Gdip_GraphicsFromHDC(hdc)
+
+; Set the smoothing mode to antialias = 4 to make shapes appear smother (only used for vector drawing and filling)
+Gdip_SetSmoothingMode(G, 4)
+
+; Create a fully opaque red brush (ARGB = Transparency, red, green, blue) to draw a circle
+pBrush := Gdip_BrushCreateSolid(0xffff0000)
+
+; Fill the graphics of the bitmap with an ellipse using the brush created
+; Filling from coordinates (100,50) an ellipse of 200x300
+Gdip_FillEllipse(G, pBrush, 100, 500, 200, 300)
+
+; Delete the brush as it is no longer needed and wastes memory
+Gdip_DeleteBrush(pBrush)
+
+; Update the specified window we have created (hwnd1) with a handle to our bitmap (hdc), specifying the x,y,w,h we want it positioned on our screen
+; So this will position our gui at (0,0) with the Width and Height specified earlier
+UpdateLayeredWindow(hwnd1, hdc, 0, 0, Width, Height)
+
+; Select the object back into the hdc
+SelectObject(hdc, obm)
+
+; Now the bitmap may be deleted
+DeleteObject(hbm)
+
+; Also the device context related to the bitmap may be deleted
+DeleteDC(hdc)
+
+; The graphics may now be deleted
+Gdip_DeleteGraphics(G)
 Return
 
-GuiSize:
-    Rx := A_GuiWidth/2
-    Ry := A_GuiHeight/2
-    Zx := Rx/zoom
-    Zy := Ry/zoom
-    TrayTip,,% "Frame = " Round(2*Zx) " ? " Round(2*Zy) "`nMagnified to = " A_GuiWidth "?" A_GuiHeight
-Return
+;#######################################################################
 
-#a::
-    antialize := !antialize
-    DllCall( "gdi32.dll\SetStretchBltMode", "uint", hdc_frame, "int", 4*antialize ) ; Antializing ?
-Return
-
-#x::
-GuiClose:
-    DllCall("gdi32.dll\DeleteDC", UInt,hdc_frame )
-    DllCall("gdi32.dll\DeleteDC", UInt,hdd_frame )
-ExitApp
-
-#p::
-MButton::
-    if paused =
-    {
-        Gui, 2:Hide
-        Gui, Hide
-        SetTimer, Repaint, Off
-        paused = 1
-    }
-    else
-    {
-        Gui, 2:Show
-        Gui, Show
-        SetTimer, Repaint, 50
-        paused =
-    }
-Return
-
-^+Up::
-^+Down::
-^+WheelUp:: ; Ctrl+Shift+WheelUp to zoom in
-^+WheelDown:: ; Ctrl+Shift+WheelUp to zoom out
-    If (zoom < 31 and ( A_ThisHotKey = "^+WheelUp" or A_ThisHotKey = "^+Up" ))
-        zoom *= 1.189207115 ; sqrt(sqrt(2))
-    If (zoom > 1 and ( A_ThisHotKey = "^+WheelDown" or A_ThisHotKey = "^+Down" ))
-        zoom /= 1.189207115
-    Zx := Rx/zoom
-    Zy := Ry/zoom
-    TrayTip,,% "Zoom = " Round(100*zoom) "%"
-Return
-
-In(x,a,b) { ; closest number to x in [a,b]
-IfLess x,%a%, Return a
-IfLess b,%x%, Return b
-Return x
+ExitFunc(ExitReason, ExitCode)
+{
+    global
+    ; gdi+ may now be shutdown on exiting the program
+    Gdip_Shutdown(pToken)
 }

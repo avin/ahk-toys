@@ -11,6 +11,9 @@ WinGet, mainWin_id, ID, A
 
 Global SwitchedOn := 0
 Global IsDebug := 0 ; <<<<<<<<<< DEBUG MODE
+Global IsDrawMouseCursor := 0 ; <<<<<<<<<< WITH FAKE MOUSE
+
+Global BroadcastWinTitle := "BroadcastWin"
 
 border_thickness = 4
 border_color = FFF000
@@ -40,7 +43,18 @@ return
 
         Gosub, DrawBorderWin
     }
+Return
 
+#NumpadDot::
+    IsDrawMouseCursor := IsDrawMouseCursor ? 0 : 1
+    SoundBeep, 1500,50
+    ;WinGet, hWnd, ID, ahk_class Notepad
+
+    newTitle:=BroadcastWinTitle
+    if(IsDrawMouseCursor){
+        newTitle.=" (D)"
+    }
+    WinSetTitle, % "ahk_id " BroadcastWinHwnd,, %newTitle%
 Return
 
 DrawBorderWin:
@@ -101,7 +115,7 @@ DrawBroadcastWin:
     Ry = 256
     Gui BroadcastWin: New, -Caption +AlwaysOnTop hwndBroadcastWinHwnd
     Gui BroadcastWin: Margin, 0,0
-    Gui BroadcastWin: Show, % "w" Rx " h" Ry " x0 y0", BroadcastWin
+    Gui BroadcastWin: Show, % "w" Rx " h" Ry " x0 y0", % BroadcastWinTitle
     WinSet Transparent, 0, ahk_id %BroadcastWinHwnd% ; makes the window invisible to magnification
     if(IsDebug){
         WinSet Transparent, 255, ahk_id %BroadcastWinHwnd%
@@ -117,6 +131,7 @@ Return
 
 RepaintBroadcastWindow:
     WinGetPos x, y,w,h, ahk_id %mainWin_id%
+    MouseGetPos, mx, my
     px:=x
     py:=y
 
@@ -125,6 +140,13 @@ RepaintBroadcastWindow:
 
     DllCall("gdi32.dll\BitBlt", UInt,hdc_frame, Int,0, Int,0, Int,Rx, Int,Ry
     , UInt,hdd_frame, UInt,xz, UInt,yz, UInt,0xCC0020)
+
+    if(IsDrawMouseCursor){
+        mx -= x
+        my -= y
+        DllCall("gdi32.dll\BitBlt", UInt,hdc_frame, Int,mx, Int,my, Int,10, Int,10
+        , UInt, , UInt,10, UInt,10, UInt,0x00000042)
+    }
 Return
 
 BroadcastWinGuiSize:
