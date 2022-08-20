@@ -10,6 +10,7 @@ Gui, Main: Add, Text, center, Win+M to start
 WinGet, mainWin_id, ID, A
 
 Global SwitchedOn := 0
+Global IsDebug := 1 ; <<<<<<<<<< DEBUG MODE
 
 border_thickness = 4
 border_color = FFF000
@@ -30,7 +31,12 @@ return
         WinSet, Transparent, 0, ahk_id %mainWin_id%
 
         WinGetPos x, y,w,h, ahk_id %mainWin_id%
-        WinMove, BroadcastWin, , px, py, w, h
+
+        cx := px
+        if(IsDebug){
+            cx+=w
+        }
+        WinMove, BroadcastWin, , cx, py, w, h
 
         Gosub, DrawBorderWin
     }
@@ -97,6 +103,9 @@ DrawBroadcastWin:
     Gui BroadcastWin: Margin, 0,0
     Gui BroadcastWin: Show, % "w" Rx " h" Ry " x0 y0", BroadcastWin
     WinSet Transparent, 0, ahk_id %BroadcastWinHwnd% ; makes the window invisible to magnification
+    if(IsDebug){
+        WinSet Transparent, 255, ahk_id %BroadcastWinHwnd%
+    }
     WinGet PrintSourceID, ID
     WinSet, ExStyle, +0x80020, ahk_id %BroadcastWinHwnd%
 
