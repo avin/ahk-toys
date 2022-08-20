@@ -65,9 +65,9 @@ return
     restore()
 return
 
-XButton1::
-    restore()
-Return
+; XButton1::
+;     restore()
+; Return
 
 ;При нажатии Esc только когда открыто окно gui - скрываем его
 #IfWinActive, ahk_class AutoHotkeyGUI
