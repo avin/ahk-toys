@@ -3,9 +3,12 @@ SendMode Input
 SetWorkingDir, %A_ScriptDir%
 ;----------
 
+DllCall("SetWinEventHook","UInt",0x8005,"UInt",0x8005,"Ptr",0,"Ptr",RegisterCallback("FOCUS_HOOK","F"),"UInt",DllCall("GetCurrentProcessId"),"UInt",0,"UInt",0)
+
 Menu, Tray, Icon, icon.ico
 
 Global Handles := []
+Global HandlesPoses := []
 Global Transparencies := []
 Global Index := 0
 Global ThroughMode := 0
@@ -84,6 +87,28 @@ RButton Up::
     isSlideTransActive := 0
     SetTimer HandleMouseMoveTimer, OFF
 return
+
+^z::
+    WinGet, hwnd, ID, A
+
+    if (HandlesPoses[hwnd]){
+        pose := HandlesPoses[hwnd].pop()
+
+        WinGetPos, x, y, , , A
+        IsSamePos := pose[1] == x and pose[2] == y
+        if(IsSamePos){
+            pose := HandlesPoses[hwnd].pop()
+        }
+
+        x := pose[1]
+        y := pose[2]
+        WinMove, %x%, %y%
+    }
+Return
+
+~LButton::
+    SaveLastPos()
+Return
 #IfWinActive
 
 ; ----------------------------
@@ -180,10 +205,37 @@ CloseWindowByHwnd(hwnd){
     }
 }
 
+SaveLastPos(){
+    WinGet, hwnd, ID, A
+
+    if (Handles[hwnd]){
+        WinGetPos, x, y, , , A
+
+        if (HandlesPoses[hwnd]){
+            LastValIndex := HandlesPoses[hwnd].MaxIndex()
+            LastVal := HandlesPoses[hwnd][LastValIndex]
+            IsSamePos := LastVal[1] == x and LastVal[2] == y
+
+            if(!IsSamePos){
+                HandlesPoses[hwnd].Push([x,y])
+            } else {
+                OutputDebug, % 1
+            }
+        } else {
+            HandlesPoses[hwnd] := [[x,y]]
+        }
+    }
+
+}
+
 WM_MOUSEMOVE( wparam, lparam, msg, hwnd )
 {
     if wparam = 1 ; LButton
         PostMessage, 0xA1, 2,,, A ; WM_NCLBUTTONDOWN
+}
+
+FOCUS_HOOK(handle,Event,hWnd){
+    SaveLastPos()
 }
 
 ;GuiClose:
