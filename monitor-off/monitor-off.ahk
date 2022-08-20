@@ -1,7 +1,7 @@
-#SingleInstance, Force
+п»ї#SingleInstance, Force
 SendMode Input
 SetWorkingDir, %A_ScriptDir%
 ;---
 
-; Pause - Выключить монитор
+; Pause - Р’С‹РєР»СЋС‡РёС‚СЊ РјРѕРЅРёС‚РѕСЂ
 Pause Up::SendMessage,0x112,0xF170,2,,Program Manager

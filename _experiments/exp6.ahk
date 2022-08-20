@@ -1,4 +1,4 @@
-DllCall("SetWinEventHook","UInt",0x8005,"UInt",0x8005,"Ptr",0,"Ptr",RegisterCallback("THE_HOOK","F"),"UInt",DllCall("GetCurrentProcessId"),"UInt",0,"UInt",0)
+﻿DllCall("SetWinEventHook","UInt",0x8005,"UInt",0x8005,"Ptr",0,"Ptr",RegisterCallback("THE_HOOK","F"),"UInt",DllCall("GetCurrentProcessId"),"UInt",0,"UInt",0)
 CoordMode ToolTip,Client
 Gui Add,Edit
 Gui Add,Button,,OK

@@ -1,4 +1,4 @@
-#SingleInstance, Force ; Force the script to close any other instances of this script. (Run one copy at a time)
+﻿#SingleInstance, Force ; Force the script to close any other instances of this script. (Run one copy at a time)
 SetBatchLines, -1 ;Set the script to run at top speed.
 CoordMode, Mouse , Screen ;Use the screen as the refrence to get positions from.
 ;-------

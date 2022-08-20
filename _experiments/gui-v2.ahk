@@ -1,4 +1,4 @@
-; Created by:   AHK_User,
+﻿; Created by:   AHK_User,
 ; Date:         2021-10-20
 ; This Gui is based on gui example of TheDewd
 ; Thanks to Viv for fixing the tooltip issue and testing

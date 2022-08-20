@@ -1,9 +1,9 @@
-#SingleInstance, Force
+п»ї#SingleInstance, Force
 SendMode Input
 SetWorkingDir, %A_ScriptDir%
 ;----------------
 
-;Добавляем пункт в тей меню для раскрытия окна по клику иконки в трее
+;Р”РѕР±Р°РІР»СЏРµРј РїСѓРЅРєС‚ РІ С‚РµР№ РјРµРЅСЋ РґР»СЏ СЂР°СЃРєСЂС‹С‚РёСЏ РѕРєРЅР° РїРѕ РєР»РёРєСѓ РёРєРѕРЅРєРё РІ С‚СЂРµРµ
 Menu, Tray, Add, Show Gui, restore
 Menu, Tray, Default, Show Gui
 Menu, Tray, Click, 1
@@ -11,14 +11,14 @@ Menu, Tray, Click, 1
 ;Gui +HwndGuiHwnd
 Gui, Font, s15, Consolas
 Gui, Add, Edit, w600 Multi r5 -WantReturn vEditContents
-;Скрытая кнопка нужна для сабмита формы
+;РЎРєСЂС‹С‚Р°СЏ РєРЅРѕРїРєР° РЅСѓР¶РЅР° РґР»СЏ СЃР°Р±РјРёС‚Р° С„РѕСЂРјС‹
 Gui, Add, Button, x-10 y-10 w1 h1 +default gGetContents
 Gui, +AlwaysOnTop
 Gui, +hwndWINID
-;Чтоб скрыть крестик закрытия окна
+;Р§С‚РѕР± СЃРєСЂС‹С‚СЊ РєСЂРµСЃС‚РёРє Р·Р°РєСЂС‹С‚РёСЏ РѕРєРЅР°
 Gui, -SysMenu
 
-;Counter-ы для отслеживания смены состояний скрипта
+;Counter-С‹ РґР»СЏ РѕС‚СЃР»РµР¶РёРІР°РЅРёСЏ СЃРјРµРЅС‹ СЃРѕСЃС‚РѕСЏРЅРёР№ СЃРєСЂРёРїС‚Р°
 global lastShift := 1
 global isWinActive := 0
 global vCtrlF := 0
@@ -26,13 +26,13 @@ global vCtrlWithFocus := 0
 
 Return
 
-;Показать окно с gui
+;РџРѕРєР°Р·Р°С‚СЊ РѕРєРЅРѕ СЃ gui
 restore(){
     isWinActive := 1
     Gui Show,,Notes
     GuiControl Focus, EditContents
 
-    ; Сделим за потерей фокуса и хайдим окно если фокус пропал
+    ; РЎРґРµР»РёРј Р·Р° РїРѕС‚РµСЂРµР№ С„РѕРєСѓСЃР° Рё С…Р°Р№РґРёРј РѕРєРЅРѕ РµСЃР»Рё С„РѕРєСѓСЃ РїСЂРѕРїР°Р»
     GuiControlGet, vCtrlWithFocus, FocusV
     SetTimer,TAB,100
 }
@@ -45,14 +45,14 @@ TAB:
     }
 Return
 
-;Скрыть gui-окно
+;РЎРєСЂС‹С‚СЊ gui-РѕРєРЅРѕ
 hide() {
     isWinActive := 0
     SetTimer,TAB,Off
     Gui Hide
 }
 
-;По двойному нажатия Ctrl показываем окно
+;РџРѕ РґРІРѕР№РЅРѕРјСѓ РЅР°Р¶Р°С‚РёСЏ Ctrl РїРѕРєР°Р·С‹РІР°РµРј РѕРєРЅРѕ
 ~RCtrl Up::
     diff := A_TickCount - lastShift
     if (diff <= 250){
@@ -69,13 +69,13 @@ return
 ;     restore()
 ; Return
 
-;При нажатии Esc только когда открыто окно gui - скрываем его
+;РџСЂРё РЅР°Р¶Р°С‚РёРё Esc С‚РѕР»СЊРєРѕ РєРѕРіРґР° РѕС‚РєСЂС‹С‚Рѕ РѕРєРЅРѕ gui - СЃРєСЂС‹РІР°РµРј РµРіРѕ
 #IfWinActive, ahk_class AutoHotkeyGUI
 ~Escape::
     hide()
 Return
 
-;Сделать запись в файл (при этом создав папку если нету)
+;РЎРґРµР»Р°С‚СЊ Р·Р°РїРёСЃСЊ РІ С„Р°Р№Р» (РїСЂРё СЌС‚РѕРј СЃРѕР·РґР°РІ РїР°РїРєСѓ РµСЃР»Рё РЅРµС‚Сѓ)
 WriteNoteToFile(content)
 {
     FormatTime, Time,, HH:mm:ss
@@ -90,7 +90,7 @@ WriteNoteToFile(content)
     FileAppend, [%Time%]`n%content%`n`n`n, %dir%\%Date% - %A_DDDD%.txt
 }
 
-;Действие на сабмите по скрытой кнопке, инициализирует процесс записи текста из edit-а в файл
+;Р”РµР№СЃС‚РІРёРµ РЅР° СЃР°Р±РјРёС‚Рµ РїРѕ СЃРєСЂС‹С‚РѕР№ РєРЅРѕРїРєРµ, РёРЅРёС†РёР°Р»РёР·РёСЂСѓРµС‚ РїСЂРѕС†РµСЃСЃ Р·Р°РїРёСЃРё С‚РµРєСЃС‚Р° РёР· edit-Р° РІ С„Р°Р№Р»
 GetContents:
     Gui, Submit, NoHide
     WriteNoteToFile(EditContents)

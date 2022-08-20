@@ -1,4 +1,4 @@
-#NoEnv
+п»ї#NoEnv
 SetBatchLines -1
 
 CoordMode Mouse, Screen
@@ -22,7 +22,7 @@ Return
 
 Repaint:
     WinGetPos x, y,w,h, Magnifier
-    x += w ; TODO убрать!
+    x += w ; TODO СѓР±СЂР°С‚СЊ!
 
     xz := x
     yz := y

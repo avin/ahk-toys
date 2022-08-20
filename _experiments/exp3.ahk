@@ -1,4 +1,4 @@
-#NoEnv
+﻿#NoEnv
 SetBatchLines -1
 
 CoordMode Mouse, Screen

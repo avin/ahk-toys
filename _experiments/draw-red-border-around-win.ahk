@@ -1,4 +1,4 @@
-#Persistent
+﻿#Persistent
 
 SetTimer, DrawRect, 50
 border_thickness = 4
