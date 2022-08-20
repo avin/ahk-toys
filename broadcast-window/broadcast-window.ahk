@@ -1,6 +1,6 @@
-﻿#SingleInstance, Force ; Force the script to close any other instances of this script. (Run one copy at a time)
-SetBatchLines, -1 ;Set the script to run at top speed.
-CoordMode, Mouse , Screen ;Use the screen as the refrence to get positions from.
+﻿#SingleInstance, Force
+SetBatchLines, -1
+CoordMode, Mouse , Screen
 ;-------
 
 Gui, Main: +AlwaysOnTop +resize MinSize200x200
@@ -46,8 +46,6 @@ DrawBorderWin:
     WinGet, isMaxed , MinMax, ahk_id %mainWin_id%
     if (isMaxed=0)
     {
-
-        ; Gui, Border: +Lastfound +AlwaysOnTop +Toolwindow
         Gui, Border: +AlwaysOnTop +Lastfound +ToolWindow
         iw:= w + border_thickness
         ih:= h + border_thickness
@@ -98,7 +96,6 @@ DrawBroadcastWin:
     Gui BroadcastWin: New, -Caption +AlwaysOnTop hwndBroadcastWinHwnd
     Gui BroadcastWin: Margin, 0,0
     Gui BroadcastWin: Show, % "w" Rx " h" Ry " x0 y0", BroadcastWin
-    ;WinGet MagnifierID, id, Magnifier
     WinSet Transparent, 0, ahk_id %BroadcastWinHwnd% ; makes the window invisible to magnification
     WinGet PrintSourceID, ID
     WinSet, ExStyle, +0x80020, ahk_id %BroadcastWinHwnd%
@@ -111,15 +108,11 @@ Return
 
 RepaintBroadcastWindow:
     WinGetPos x, y,w,h, ahk_id %mainWin_id%
-    ;px:=x+w
     px:=x
     py:=y
 
     xz := x
     yz := y
-
-    ; DllCall("gdi32.dll\StretchBlt", UInt,hdc_frame, Int,0, Int,0, Int,Rx, Int,Ry
-    ; , UInt,hdd_frame, UInt,xz, UInt,yz, Int,Rx, Int,Ry, UInt,0xCC0020)
 
     DllCall("gdi32.dll\BitBlt", UInt,hdc_frame, Int,0, Int,0, Int,Rx, Int,Ry
     , UInt,hdd_frame, UInt,xz, UInt,yz, UInt,0xCC0020)
