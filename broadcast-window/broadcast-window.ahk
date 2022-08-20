@@ -10,7 +10,7 @@ Gui, Main: Add, Text, center, Win+M to start
 WinGet, mainWin_id, ID, A
 
 Global SwitchedOn := 0
-Global IsDebug := 1 ; <<<<<<<<<< DEBUG MODE
+Global IsDebug := 0 ; <<<<<<<<<< DEBUG MODE
 
 border_thickness = 4
 border_color = FFF000
