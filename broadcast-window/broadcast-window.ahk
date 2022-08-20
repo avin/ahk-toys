@@ -4,7 +4,7 @@ CoordMode, Mouse , Screen
 ;-------
 
 Global SwitchedOn := 0
-Global IsDebug := 1 ; <<<<<<<<<< DEBUG MODE
+Global IsDebug := 0 ; <<<<<<<<<< DEBUG MODE
 Global IsDrawMouseCursor := 1
 
 Global BroadcastWinTitle := "BroadcastWin"
