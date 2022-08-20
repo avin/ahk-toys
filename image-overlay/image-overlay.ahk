@@ -36,14 +36,14 @@ Return
     Gosub, ToggleThroughMode
 return
 
-#LButton::
+#RButton::
     MouseGetPos, MouseX
     isSlideTransForAllActive := 1
     MouseGetPos, prevMouseX
     SetTimer HandleMouseMoveTimer, 10
 Return
 
-#LButton Up::
+#RButton Up::
     isSlideTransForAllActive := 0
     SetTimer HandleMouseMoveTimer, OFF
 return
