@@ -6,6 +6,7 @@ CoordMode, Mouse , Screen
 Global SwitchedOn := 0
 Global IsDebug := 0 ; <<<<<<<<<< DEBUG MODE
 Global IsDrawMouseCursor := 1
+Global BroadcastWinHwnd
 
 Global BroadcastWinTitle := "BroadcastWin"
 Global BorderWinTitle := "BorderWin"
@@ -23,6 +24,8 @@ border_thickness = 4
 border_color = FFF000
 
 Gosub, DrawBroadcastWin
+
+Gosub, DetectMinimizeBroadcastWin
 
 return
 
@@ -203,6 +206,20 @@ UpdateBroadcastWinTitle:
     }
     WinSetTitle, % "ahk_id " BroadcastWinHwnd,, %newTitle%
 Return
+
+DetectMinimizeBroadcastWin:
+    DllCall( "RegisterShellHookWindow", UInt,BroadcastWinHwnd )
+    MsgNum := DllCall( "RegisterWindowMessage", Str,"SHELLHOOK" )
+    OnMessage( MsgNum, "ShellMessage" )
+Return
+
+ShellMessage( wParam,lParam ) {
+    WinGet, status,MinMax,ahk_id %BroadcastWinHwnd%
+
+    if(status = -1){
+        WinActivate, ahk_id %BroadcastWinHwnd%
+    }
+}
 
 MainGuiClose:
 ExitApp
