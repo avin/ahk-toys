@@ -70,18 +70,17 @@ return
 
 return
 
-;При нажатии Esc только когда открыто окно gui - скрываем его
 #IfWinActive, ahk_class AutoHotkeyGUI
 ~Escape::
     hide()
 Return
 
-#IfWinActive, ahk_class AutoHotkeyGUI
 ^e::
     filePath:=GetFilePath()
     Run, notepad.exe %filePath%
     hide()
 Return
+#IfWinActive
 
 GetDirPath(){
     FormatTime, MonthDate,, yyyy-MM
