@@ -3,26 +3,26 @@ SendMode Input
 SetWorkingDir, %A_ScriptDir%
 ;----------------
 
+global lastShift := 1
+global isWinActive := 0
+global vCtrlF := 0
+global vCtrlWithFocus := 0
+global rootDir := A_MyDocuments . "\notes\"
+
 ;Добавляем пункт в тей меню для раскрытия окна по клику иконки в трее
 Menu, Tray, Add, Show Gui, restore
 Menu, Tray, Default, Show Gui
 Menu, Tray, Click, 1
 
-;Gui +HwndGuiHwnd
+Gui, Margin, 8, 8
 Gui, Font, s15, Consolas
 Gui, Add, Edit, w600 Multi r5 -WantReturn vEditContents
 ;Скрытая кнопка нужна для сабмита формы
 Gui, Add, Button, x-10 y-10 w1 h1 +default gGetContents
-Gui, +AlwaysOnTop
-Gui, +hwndWINID
-;Чтоб скрыть крестик закрытия окна
-Gui, -SysMenu
+Gui, +hwndMainWinHwnd -SysMenu +AlwaysOnTop
 
-;Counter-ы для отслеживания смены состояний скрипта
-global lastShift := 1
-global isWinActive := 0
-global vCtrlF := 0
-global vCtrlWithFocus := 0
+restore()
+hide()
 
 Return
 
@@ -40,7 +40,7 @@ restore(){
 TAB:
     Sleep, 100
     GuiControlGet, vCtrlF, FocusV
-    if(vCtrlF!=vCtrlWithFocus){
+    if(vCtrlF!=vCtrlWithFocus) {
         hide()
     }
 Return
@@ -55,7 +55,7 @@ hide() {
 ;По двойному нажатия Ctrl показываем окно
 ~RCtrl Up::
     diff := A_TickCount - lastShift
-    if (diff <= 250){
+    if (diff <= 250) {
         restore()
     }
     lastShift := A_TickCount
@@ -86,7 +86,7 @@ Return
 GetDirPath(){
     FormatTime, MonthDate,, yyyy-MM
 
-    dirPath := "C:\tmp\notes\" . MonthDate
+    dirPath := rootDir . MonthDate
     OutputDebug, % dirPath
 
 return dirPath
