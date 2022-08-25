@@ -62,12 +62,13 @@ hide() {
 return
 
 #Space::
-    restore()
-return
+    if isWinActive {
+        hide()
+    } else {
+        restore()
+    }
 
-; XButton1::
-;     restore()
-; Return
+return
 
 ;При нажатии Esc только когда открыто окно gui - скрываем его
 #IfWinActive, ahk_class AutoHotkeyGUI
@@ -75,19 +76,42 @@ return
     hide()
 Return
 
+#IfWinActive, ahk_class AutoHotkeyGUI
+^e::
+    filePath:=GetFilePath()
+    Run, notepad.exe %filePath%
+    hide()
+Return
+
+GetDirPath(){
+    FormatTime, MonthDate,, yyyy-MM
+
+    dirPath := "C:\tmp\notes\" . MonthDate
+    OutputDebug, % dirPath
+
+return dirPath
+}
+
+GetFilePath(){
+    FormatTime, Date,, yyyy-MM-dd
+    dirPath := GetDirPath()
+    filePath := dirPath . "\" . Date . " - " . A_DDDD . ".txt"
+return filePath
+}
+
 ;Сделать запись в файл (при этом создав папку если нету)
 WriteNoteToFile(content)
 {
     FormatTime, Time,, HH:mm:ss
-    FormatTime, Date,, yyyy-MM-dd
-    FormatTime, MonthDate,, yyyy-MM
 
-    dir:="C:\tmp\notes\" MonthDate
-    If !FileExist(dir) {
-        FileCreateDir, %dir%
+    dirPath:=GetDirPath()
+    If !FileExist(dirPath) {
+        FileCreateDir, %dirPath%
     }
 
-    FileAppend, [%Time%]`n%content%`n`n`n, %dir%\%Date% - %A_DDDD%.txt
+    filePath:=GetFilePath()
+
+    FileAppend, [%Time%]`n%content%`n`n`n, %filePath%
 }
 
 ;Действие на сабмите по скрытой кнопке, инициализирует процесс записи текста из edit-а в файл
