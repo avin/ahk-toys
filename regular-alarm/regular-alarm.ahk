@@ -5,6 +5,7 @@ SetWorkingDir, %A_ScriptDir%
 
 global isWinActive := 0
 global MainWinHwnd := 0
+global splashTime := 500
 
 ;----------------
 
@@ -18,9 +19,7 @@ Gui Main: Add, Button, w300 h80 gonClickWork, Work
 
 onClickWork()
 
-SetTimer, Splash1, 500
-Sleep, 250
-SetTimer, Splash2, 500
+Goto, Splash1
 
 Return
 
@@ -28,10 +27,12 @@ Return
 
 Splash1:
     Gui Main: Color, 0x137CBD
+    SetTimer, Splash2, -%splashTime%
 Return
 
 Splash2:
     Gui Main: Color, 0xEBF1F5
+    SetTimer, Splash1, -%splashTime%
 Return
 
 ;----------------
