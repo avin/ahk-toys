@@ -38,14 +38,14 @@ Return
 ;----------------
 
 onClickAddTime(){
-    ; SetTimer, restore, -300000 ; 5 Min
-    SetTimer, restore, -3000 ; 3 Sec
+    SetTimer, restore, -300000 ; 5 Min
+    ; SetTimer, restore, -3000 ; 3 Sec
     hide()
 }
 
 onClickWork(){
-    ; SetTimer, restore, -2400000 ; 40 Min
-    SetTimer, restore, -10000 ; 10 Sec
+    SetTimer, restore, -2400000 ; 40 Min
+    ; SetTimer, restore, -10000 ; 10 Sec
     hide()
 }
 
