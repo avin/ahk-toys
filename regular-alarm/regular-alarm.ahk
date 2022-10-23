@@ -38,14 +38,14 @@ Return
 ;----------------
 
 onClickAddTime(){
-    SetTimer, restore, -300000 ; 5 Min
-    ; SetTimer, restore, -3000 ; 3 Sec
+    ; SetTimer, restore, -300000 ; 5 Min
+    SetTimer, restore, -3000 ; 3 Sec
     hide()
 }
 
 onClickWork(){
-    SetTimer, restore, -2400000 ; 40 Min
-    ; SetTimer, restore, -10000 ; 10 Sec
+    ; SetTimer, restore, -2400000 ; 40 Min
+    SetTimer, restore, -10000 ; 10 Sec
     hide()
 }
 
@@ -53,7 +53,7 @@ onClickWork(){
 restore(){
     isWinActive := 1
     winX := A_ScreenWidth-300-40
-    Gui Main: Show, x%winX% y40, Time
+    Gui Main: Show, NoActivate x%winX% y40, Time
 }
 
 ;Скрыть gui-окно
