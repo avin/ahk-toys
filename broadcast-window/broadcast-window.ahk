@@ -167,8 +167,6 @@ HandleSet1920x1080Size:
     SysGet, SM_CYMENU, 15
     SysGet, SM_CYCAPTION, 4
 
-
-
     Height := 1080 - ( SM_CYCAPTION + SM_CYSIZEFRAME*2 )
     Width := 1920 - ( SM_CYSIZEFRAME*2 )
     Gui, Main: Show, w%Width% h%Height% xCenter yCenter
