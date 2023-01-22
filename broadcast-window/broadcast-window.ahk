@@ -18,6 +18,9 @@ Gui, Main: +AlwaysOnTop +resize MinSize200x200
 Gui, Main: Show, w600 h600, % MainWinTitle
 Gui, Main: Font, cRed s18, verdana
 Gui, Main: Add, Text, center, Win+M to start
+Gui, Main: Add, Button, gHandleSet1920x1080Size,1920x1080
+Gui, Main: Add, Button, gHandleSet800x600Size,800x600
+
 WinGet, mainWin_id, ID, A
 
 border_thickness = 4
@@ -150,13 +153,21 @@ RepaintBroadcastWindow:
     yz := y
 
     DllCall("gdi32.dll\BitBlt", UInt,hdc_frame, Int,0, Int,0, Int,Rx, Int,Ry
-    , UInt,hdd_frame, UInt,xz, UInt,yz, UInt,0xCC0020)
+        , UInt,hdd_frame, UInt,xz, UInt,yz, UInt,0xCC0020)
 
     if(IsDrawMouseCursor){
         mx -= x
         my -= y
         CaptureCursor(hdc_frame, mx, my)
     }
+Return
+
+HandleSet1920x1080Size:
+    Gui, Main: Show, w1920 h1080 xCenter yCenter
+Return
+
+HandleSet800x600Size:
+    Gui, Main: Show, w800 h600 xCenter yCenter
 Return
 
 BroadcastWinGuiSize:
