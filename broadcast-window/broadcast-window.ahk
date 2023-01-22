@@ -19,7 +19,6 @@ Gui, Main: Show, w600 h600, % MainWinTitle
 Gui, Main: Font, cRed s18, verdana
 Gui, Main: Add, Text, center, Win+M to start
 Gui, Main: Add, Button, gHandleSet1920x1080Size,1920x1080
-Gui, Main: Add, Button, gHandleSet800x600Size,800x600
 
 WinGet, mainWin_id, ID, A
 
@@ -163,11 +162,16 @@ RepaintBroadcastWindow:
 Return
 
 HandleSet1920x1080Size:
-    Gui, Main: Show, w1920 h1080 xCenter yCenter
-Return
+    SysGet, SM_CXSIZEFRAME, 32
+    SysGet, SM_CYSIZEFRAME, 33
+    SysGet, SM_CYMENU, 15
+    SysGet, SM_CYCAPTION, 4
 
-HandleSet800x600Size:
-    Gui, Main: Show, w800 h600 xCenter yCenter
+
+
+    Height := 1080 - ( SM_CYCAPTION + SM_CYSIZEFRAME*2 )
+    Width := 1920 - ( SM_CYSIZEFRAME*2 )
+    Gui, Main: Show, w%Width% h%Height% xCenter yCenter
 Return
 
 BroadcastWinGuiSize:
