@@ -73,6 +73,11 @@ Loop
     else {
         DllCall("magnification.dll\MagSetWindowSource", "Ptr", hChildMagnifier, "Int", x, "Int", y, "Int", w, "Int", h)
     }
+
+    ; Выход по Esc;
+    if GetKeyState("Escape", "P"){
+        break
+    }
 }
 
 WM_LBUTTONDOWN(wParam, lParam) {
