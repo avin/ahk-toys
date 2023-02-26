@@ -10,3 +10,4 @@
 -   [notes](./notes) - быстрые записи в режиме дневника
 -   [regular-alarm](./regular-alarm) - напоминает делать перерывы при работе за компьютером
 -   [paste-datetime](./paste-datetime) - вставка метки времени `win+t`
+-   [red-filter](./red-filter) - область с фильтрацией красного цвета
