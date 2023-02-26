@@ -11,7 +11,7 @@ global mouse_down := false
 global mouse_x := 0
 global mouse_y := 0
 
-Gui, +HWNDhGui +AlwaysOnTop -Caption -DPIScale +LastFound +Border ;  WS_EX_COMPOSITED := E0x02000000  WS_EX_LAYERED := E0x00080000
+Gui, +HWNDhGui +AlwaysOnTop -Caption -DPIScale +LastFound +Border
 Gui, Margin, 0,0
 Gui, Show, x2000 y100 w1000 h300
 
