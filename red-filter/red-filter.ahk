@@ -13,7 +13,7 @@ global mouse_y := 0
 
 Gui, +HWNDhGui +AlwaysOnTop -Caption -DPIScale +LastFound +Border
 Gui, Margin, 0,0
-Gui, Show, x2000 y100 w1000 h300
+Gui, Show, x100 y100 w1000 h300
 
 OnMessage(0x0201, "WM_LBUTTONDOWN")
 OnMessage(0x0202, "WM_LBUTTONUP")
