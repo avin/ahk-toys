@@ -10,8 +10,8 @@ global h := 0
 global mouse_down := false
 global mouse_x := 0
 global mouse_y := 0
-global depth_r := -3.0
-global depth_g := 3.0
+global depth_r := -4.0
+global depth_g := 4.0
 global depth_b := 0
 global depth_changed := true
 
