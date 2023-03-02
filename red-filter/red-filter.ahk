@@ -10,44 +10,56 @@ global h := 0
 global mouse_down := false
 global mouse_x := 0
 global mouse_y := 0
+global depth_r := -3.0
+global depth_g := 3.0
+global depth_b := 0
+global depth_changed := true
 
 Gui, +HWNDhGui +AlwaysOnTop -Caption -DPIScale +LastFound +Border
+; Gui, +HWNDhGui +AlwaysOnTop
 Gui, Margin, 0,0
-Gui, Show, x100 y100 w1000 h300
+Gui, Show, x100 y100 w1200 h300
 
 OnMessage(0x0201, "WM_LBUTTONDOWN")
 OnMessage(0x0202, "WM_LBUTTONUP")
+OnMessage(WM_KEYDOWN := 0x100, "ON_KEYDOWN")
 
 DllCall("LoadLibrary", "str", "magnification.dll")
 DllCall("magnification.dll\MagInitialize")
 
 WinGetPos x, y,w,h, ahk_id %hGui%
 
-; Matrix := ""  ; ---------- INVERT
-;     . "-1| 0| 0| 0| 0|"
-;     . " 0|-1| 0| 0| 0|"
-;     . " 0| 0|-1| 0| 0|"
-;     . " 0| 0| 0| 1| 0|"
-;     . " 1| 1| 1| 0| 1"
-
-Matrix := "" ; ------------- WORK! RED is WHITE
-    . " 1| 0| 0| -1.5| 0|"
-    . " 0| 1| 0| 0| 0|"
-    . " 0| 0| 1| 0| 0|"
-    . " 0|0 | 0| 1| 0|"
-    . " 0| 0| 0| 0| 0"
-
-VarSetCapacity(MAGCOLOREFFECT, 100, 0)
-Loop, Parse, Matrix, |
-{
-    NumPut(A_LoopField, MAGCOLOREFFECT, (A_Index - 1) * 4, "float")
-}
-
 hChildMagnifier := DllCall("CreateWindowEx", "UInt", 0, "Str", "Magnifier", "Str", "MagnifierWindow", "UInt", (WS_CHILD := 0x40000000), "Int", 0, "Int", 0, "Int", w, "Int", h, "Ptr", hGui, "UInt", 0, "Ptr", DllCall("GetWindowLong" (A_PtrSize=8 ? "Ptr" : ""), "Ptr", hGui, "Int", GWL_HINSTANCE := -100 , "ptr"), "UInt", 0, "ptr")
-DllCall("magnification.dll\MagSetColorEffect", "ptr", hChildMagnifier, "ptr", &MAGCOLOREFFECT)
 WinShow, ahk_id %hChildMagnifier%
+
 Loop
 {
+
+    if(depth_changed){
+        ; Matrix := ""  ; ---------- INVERT
+        ;     . "-1| 0| 0| 0| 0|"
+        ;     . " 0|-1| 0| 0| 0|"
+        ;     . " 0| 0|-1| 0| 0|"
+        ;     . " 0| 0| 0| 1| 0|"
+        ;     . " 1| 1| 1| 0| 1"
+
+        Matrix := "" ; ------------- WORK! RED is WHITE
+            . " 1| 0| 0| " . depth_r . "| 0|"
+            . " 0| 1| 0| " . depth_g . "| 0|"
+            . " 0| 0| 1| " . depth_b . "| 0|"
+            . " 0|0 | 0| 1| 0|"
+            . " 0| 0| 0| 0| 0"
+
+        VarSetCapacity(MAGCOLOREFFECT, 100, 0)
+        Loop, Parse, Matrix, |
+        {
+            NumPut(A_LoopField, MAGCOLOREFFECT, (A_Index - 1) * 4, "float")
+        }
+
+        DllCall("magnification.dll\MagSetColorEffect", "ptr", hChildMagnifier, "ptr", &MAGCOLOREFFECT)
+
+        depth_changed := false
+    }
 
     if (mouse_down) {
         MouseGetPos, current_x, current_y
@@ -87,6 +99,55 @@ WM_LBUTTONDOWN(wParam, lParam) {
 
 WM_LBUTTONUP(wParam, lParam) {
     mouse_down := false
+}
+
+ON_KEYDOWN(wParam, lParam, m, h) {
+    ; MsgBox, % wParam
+
+    ;R
+    if(wParam = 81){
+        depth_r := depth_r - 0.1
+        depth_changed := true
+    }
+    if(wParam = 65){
+        depth_r := depth_r + 0.1
+        depth_changed := true
+    }
+
+    ;G
+    if(wParam = 87){
+        depth_g := depth_g - 0.1
+        depth_changed := true
+    }
+    if(wParam = 83){
+        depth_g := depth_g + 0.1
+        depth_changed := true
+    }
+
+    ;B
+    if(wParam = 69){
+        depth_b := depth_b - 0.1
+        depth_changed := true
+    }
+    if(wParam = 68){
+        depth_b := depth_b + 0.1
+        depth_changed := true
+    }
+
+    OutputDebug, % depth_r . "|" depth_g . "|" depth_b
+    ; WinSetTitle, % depth_r . "|" depth_g . "|" depth_b
+
+    ; if (delta := NumGet(lParam+0,10,"Short"))
+    ; {
+    ;     MsgBox, 123
+    ;     if (delta<0) {
+    ;         depth := depth - 0.1
+    ;         return true
+    ;     } else {
+    ;         depth := depth + 0.1
+    ;         return true
+    ;     }
+    ; }
 }
 
 Uninitialize:
