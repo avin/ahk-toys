@@ -11,3 +11,4 @@
 -   [regular-alarm](./regular-alarm) - напоминает делать перерывы при работе за компьютером
 -   [paste-datetime](./paste-datetime) - вставка метки времени `win+t`
 -   [red-filter](./red-filter) - область с фильтрацией красного цвета
+-   [chorme-double-click](./chorme-double-click) - выделение слова двойным кликом в Crhome без захвата пробела
