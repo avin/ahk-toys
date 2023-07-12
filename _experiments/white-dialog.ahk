@@ -7,13 +7,6 @@ global x := 0
 global y := 0
 global w := 0
 global h := 0
-global mouse_down := false
-global mouse_x := 0
-global mouse_y := 0
-global depth_r := -4.0
-global depth_g := 4.0
-global depth_b := 0
-global depth_changed := true
 
 Gui, +HWNDhGui +AlwaysOnTop -Caption -DPIScale +LastFound +Border
 Gui, Margin, 0,0
