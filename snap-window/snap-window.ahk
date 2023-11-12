@@ -35,11 +35,11 @@ WinGetPosEx(byref X:="", byref Y:="", byref W:="", byref H:="", hwnd:="") {
         hwnd := WinExist(hwnd)
     RECTsize := VarSetCapacity(RECT, 16, 0)
     DllCall("dwmapi\DwmGetWindowAttribute"
-            , "ptr" , hwnd
-            , "uint", DWMWA_EXTENDED_FRAME_BOUNDS
-            , "ptr" , &RECT
-            , "uint", RECTsize
-            , "uint")
+        , "ptr" , hwnd
+        , "uint", DWMWA_EXTENDED_FRAME_BOUNDS
+        , "ptr" , &RECT
+        , "uint", RECTsize
+        , "uint")
     X := NumGet(RECT, 0, "int")
     Y := NumGet(RECT, 4, "int")
     W := NumGet(RECT, 8, "int") - X
