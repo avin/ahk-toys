@@ -1,7 +1,6 @@
 #NoEnv ; Рекомендуется для улучшения совместимости и производительности
 SendMode Input ; Рекомендуется для более быстрой и надежной работы скрипта
 SetWorkingDir %A_ScriptDir% ; Установка рабочего каталога скрипта
-#IgnoreWin10Borders, On
 
 ; Переменная для отслеживания, было ли перетаскивание
 global dragHappened := false
@@ -27,28 +26,61 @@ Win__GetDesktopPos(ByRef X, ByRef Y, ByRef W, ByRef H)
     }
 }
 
+; Get window position without the invisible border.
+WinGetPosEx(byref X:="", byref Y:="", byref W:="", byref H:="", hwnd:="") {
+    static DWMWA_EXTENDED_FRAME_BOUNDS := 9
+    if (hwnd = "")
+        hwnd := WinExist() ; last found window
+    if hwnd is not integer
+        hwnd := WinExist(hwnd)
+    RECTsize := VarSetCapacity(RECT, 16, 0)
+    DllCall("dwmapi\DwmGetWindowAttribute"
+            , "ptr" , hwnd
+            , "uint", DWMWA_EXTENDED_FRAME_BOUNDS
+            , "ptr" , &RECT
+            , "uint", RECTsize
+            , "uint")
+    X := NumGet(RECT, 0, "int")
+    Y := NumGet(RECT, 4, "int")
+    W := NumGet(RECT, 8, "int") - X
+    H := NumGet(RECT, 12, "int") - Y
+}
+
+; Move window and fix offset from invisible border.
+WinMoveEx(X:="", Y:="", W:="", H:="", hwnd:="") {
+    if hwnd is not integer
+        hwnd := WinExist(hwnd)
+    if (hwnd = "")
+        hwnd := WinExist()
+    ; compare pos and get offset
+    WinGetPosEx(fX, fY, fW, fH, hwnd)
+    WinGetPos wX, wY, wW, wH, % "ahk_id" hwnd
+    xDiff := fX - wX
+    hDiff := wH - fH
+    nX := nY := nW := nH := ""
+    pixel := 1
+    ; new X, Y, W, H with offset corrected
+    (X!="") && nX := X - xDiff - pixel
+    (Y!="") && nY := Y - pixel
+    (W!="") && nW := W + (xDiff + pixel) * 2
+    (H!="") && nH := H + hDiff + (pixel * 2)
+    WinMove % "ahk_id" hwnd,, nX, nY, nW, nH
+}
+
 ; Функция для перемещения окна на левую половину экрана
 Win__HalfLeft()
 {
     Win__GetDesktopPos(X, Y, W, H) ; Получение размеров рабочего стола
-    ; WinMove, A,, X, Y, W/2, H ; Перемещение и изменение размера активного окна
     hwnd := WinExist("A") ; Получение идентификатора активного окна
-    DllCall("SetWindowPos", "ptr", hwnd, "ptr", 0, "int", X, "int", Y, "int", W//2, "int", H, "uint", 0x0040 | 0x0004)
-
+    WinMoveEx(X, Y, W//2, H, hwnd)
 }
 
 ; Функция для перемещения окна на правую половину экрана
 Win__HalfRight()
 {
     Win__GetDesktopPos(X, Y, W, H) ; Получение размеров рабочего стола
-    winMove, A,, X + W/2, Y, W/2, H ; Перемещение и изменение размера активного окна
-}
-
-; Функция для разворачивания окна на весь экран
-Win__FullSize()
-{
-    Win__GetDesktopPos(X, Y, W, H) ; Получение размеров рабочего стола
-    WinMove, A,, X, Y, W, H ; Перемещение и изменение размера активного окна
+    hwnd := WinExist("A") ; Получение идентификатора активного окна
+    WinMoveEx(X + W//2, Y, W//2, H, hwnd)
 }
 
 ; Обработка нажатия левой кнопки мыши
