@@ -11,4 +11,5 @@
 -   [regular-alarm](./regular-alarm) - напоминает делать перерывы при работе за компьютером
 -   [paste-datetime](./paste-datetime) - вставка метки времени `win+t`
 -   [red-filter](./red-filter) - область с фильтрацией красного цвета
--   [chorme-double-click](./chorme-double-click) - выделение слова двойным кликом в Chrome без захвата пробела
+-   [chrome-double-click](./chrome-double-click) - выделение слова двойным кликом в Chrome без захвата пробела
+-   [snap-window](./snap-window) - альтернативой стандартной функции Windows "Snap Window"
