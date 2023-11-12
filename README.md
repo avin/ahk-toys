@@ -12,4 +12,4 @@
 -   [paste-datetime](./paste-datetime) - вставка метки времени `win+t`
 -   [red-filter](./red-filter) - область с фильтрацией красного цвета
 -   [chrome-double-click](./chrome-double-click) - выделение слова двойным кликом в Chrome без захвата пробела
--   [snap-window](./snap-window) - альтернативой стандартной функции Windows "Snap Window"
+-   [snap-window](./snap-window) - альтернатива стандартной функции Windows "Snap Window"
