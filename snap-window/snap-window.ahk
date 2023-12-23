@@ -14,7 +14,7 @@ Win__GetDesktopPos(ByRef X, ByRef Y, ByRef W, ByRef H)
         X := 0
         Y := TrayY ? 0 : TrayH ; Установка Y в зависимости от положения панели задач
         W := A_ScreenWidth
-        H := A_ScreenHeight - TrayH ; Вычитание высоты панели задач из высоты экрана
+        H := A_ScreenHeight - TrayH - 1 ; Вычитание высоты панели задач из высоты экрана
     }
     else
     {
@@ -22,7 +22,7 @@ Win__GetDesktopPos(ByRef X, ByRef Y, ByRef W, ByRef H)
         X := TrayX ? 0 : TrayW ; Установка X в зависимости от положения панели задач
         Y := 0
         W := A_ScreenWidth - TrayW ; Вычитание ширины панели задач из ширины экрана
-        H := A_ScreenHeight
+        H := A_ScreenHeight - 1
     }
 }
 
@@ -116,12 +116,12 @@ return
         ; Получение текущих координат мыши
         coordmode,mouse,screen
         MouseGetPos,Mouse_X,Mouse_Y
-        if Mouse_X<3
+        if Mouse_X<10
         {
             Win__HalfLeft() ; Перемещение окна на левую половину экрана, если мышь у левого края
         }
 
-        if (Mouse_X > (A_ScreenWidth - 3))
+        if (Mouse_X > (A_ScreenWidth - 10))
         {
             Win__HalfRight() ; Перемещение окна на правую половину экрана, если мышь у правого края
         }
