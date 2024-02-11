@@ -1,92 +1,102 @@
-﻿#SingleInstance, Force
-SetBatchLines, -1
-CoordMode, Mouse , Screen
+﻿#Requires AutoHotkey v2.0
+#SingleInstance Force
+
+CoordMode("Mouse", "Screen")
 ;-------
 
-Global SwitchedOn := 0
-Global IsDebug := 0 ; <<<<<<<<<< DEBUG MODE
-Global IsDrawMouseCursor := 1
-Global BroadcastWinHwnd
+SwitchedOn := 0
+IsDrawMouseCursor := 1
+BroadcastWinTitle := "BroadcastWin"
+BorderWinTitle := "BorderWin"
+MainWinTitle := "PUT ME SOMEWHERE"
 
-Global BroadcastWinTitle := "BroadcastWin"
-Global BorderWinTitle := "BorderWin"
-Global MainWinTitle := "PUT ME SOMEWHERE"
+px:=0
 
 ; ----------
 
-Gui, Main: +AlwaysOnTop +resize MinSize200x200
-Gui, Main: Show, w600 h600, % MainWinTitle
-Gui, Main: Font, cRed s18, verdana
-Gui, Main: Add, Text, center, Win+M to start
-Gui, Main: Add, Button, gHandleSet1920x1080Size,1920x1080
+MainGui := Gui("+AlwaysOnTop + resize MinSize200x200", MainWinTitle)
+MainGui.Show("w600 h600")
+MainGui.SetFont("cRed s18", "verdana")
+MainGui.OnEvent("Close", MainGui_Close)
+MainGui_Close(GuiObj) {
+    ExitApp()
+}
 
-WinGet, mainWin_id, ID, A
+MainGui.AddText("center", "Win + M to start")
 
-border_thickness = 4
-border_color = FFF000
+Btn := MainGui.AddButton("", "1920x1080")
+Btn.OnEvent("Click", HandleSet1920x1080Size)  ; Call
 
-Gosub, DrawBroadcastWin
+mainWin_id := WinGetID("A")
 
-Gosub, DetectMinimizeBroadcastWin
+border_thickness := 4
+border_color := "FFF000"
+
+DrawBroadcastWin()
+DetectMinimizeBroadcastWin()
 
 return
 
-#m::
-    if(SwitchedOn){
-        SwitchedOn:=0
-        WinSet, ExStyle, -0x20,ahk_id %mainWin_id%
-        WinSet, Transparent, 255, ahk_id %mainWin_id%
-        Gui, Main: -ToolWindow
+#m:: {
+    global
+    if (SwitchedOn) {
+        SwitchedOn := 0
+        WinSetExStyle(-0x20, "ahk_id " mainWin_id)
+        WinSetTransparent(255, "ahk_id " mainWin_id)
 
-        Gui, Border: Destroy
+        MainGui.Opt("-ToolWindow")
+
+        BorderGui.Destroy()
     } else {
-        SwitchedOn:=1
-        WinSet, ExStyle, ^0x20, ahk_id %mainWin_id%
-        WinSet, Transparent, 0, ahk_id %mainWin_id%
-        Gui, Main: +ToolWindow
+        SwitchedOn := 1
+        WinSetExStyle(0x20, "ahk_id " mainWin_id)
+        WinSetTransparent(0, "ahk_id " mainWin_id)
 
-        WinGetPos x, y,w,h, ahk_id %mainWin_id%
+        MainGui.Opt("+ToolWindow")
 
-        cx := px
-        if(IsDebug){
-            cx+=w
-        }
-        WinMove, BroadcastWin, , cx, py, w, h
 
-        Gosub, DrawBorderWin
+        WinGetPos(&x, &y, &w, &h, "ahk_id " mainWin_id)
+
+        BroadcastWin.Move(px, py, w, h)
+
+        DrawBorderWin()
     }
-Return
+}
 
-#NumpadDot::
+
+#NumpadDot:: {
+    global
     IsDrawMouseCursor := IsDrawMouseCursor ? 0 : 1
-    if(IsDrawMouseCursor){
-        SoundBeep, 1500,50
+    if (IsDrawMouseCursor) {
+        SoundBeep(1500, 50)
     } else {
-        SoundBeep, 600,50
+        SoundBeep(600, 50)
     }
 
-    Gosub, UpdateBroadcastWinTitle
-Return
+    UpdateBroadcastWinTitle()
+}
 
-DrawBorderWin:
-    WinGetPos, x, y, w, h, ahk_id %mainWin_id%
-    if (x="") {
+DrawBorderWin() {
+    global
+    WinGetPos(&x, &y, &w, &h, "ahk_id " mainWin_id)
+    if (x = "") {
         return
     }
 
-    WinGet, isMaxed , MinMax, ahk_id %mainWin_id%
-    if (isMaxed=0)
-    {
-        ;Gui, Border: +AlwaysOnTop +Lastfound +ToolWindow
-        Gui, Border: +AlwaysOnTop +Lastfound +ToolWindow
-        iw:= w + border_thickness
-        ih:= h + border_thickness
-        w:= w + ( border_thickness * 2 )
-        h:= h + ( border_thickness * 2 )
-        x:= x - border_thickness
-        y:= y - border_thickness
-        Gui, Border: Color, % border_color
-        Gui, Border: -Caption
+    isMaxed := WinGetMinMax("ahk_id " mainWin_id)
+    if (isMaxed = 0) {
+        BorderGui := Gui("+AlwaysOnTop +Lastfound +ToolWindow")
+
+        iw := w + border_thickness
+        ih := h + border_thickness
+        w := w + (border_thickness * 2)
+        h := h + (border_thickness * 2)
+        x := x - border_thickness
+        y := y - border_thickness
+
+        BorderGui.Opt("-Caption")
+        ; BorderGui.SetColor(border_color)
+        BorderGui.BackColor := border_color
 
         ; outer rectangle
         o1a := 0
@@ -113,127 +123,141 @@ DrawBorderWin:
         i5b := border_thickness
 
         ; Draw outer & inner window(s)
-        WinSet, Region, %o1a%-%o1b% %o2a%-%o2b% %o3a%-%o3b% %o4a%-%o4b% %o5a%-%o5b% %i1a%-%i1b% %i2a%-%i2b% %i3a%-%i3b% %i4a%-%i4b% %i5a%-%i5b%
-        Gui, Border: Show, w%w% h%h% x%x% y%y% NoActivate, % BorderWinTitle
-
+        WinSetRegion(o1a "-" o1b " " o2a "-" o2b " " o3a "-" o3b " " o4a "-" o4b " " o5a "-" o5b " " i1a "-" i1b " " i2a "-" i2b " " i3a "-" i3b " " i4a "-" i4b " " i5a "-" i5b)
+        BorderGui.Show("w" w " h" h " x" x " y" y " NoActivate")
+        BorderGui.Title := BorderWinTitle
     } else {
-        WinSet, Region, 0-0 0-0 0-0 0-0 0-0 0-0 0-0 0-0 0-0 0-0
-        Gui, Border: Show, w0 h0 x0 y0 NoActivate, % BorderWinTitle
+        WinSetRegion("0-0 0-0 0-0 0-0 0-0 0-0 0-0 0-0 0-0 0-0")
+        BorderGui.Show("w0 h0 x0 y0 NoActivate", BorderWinTitle)
+        BorderGui.Title := BorderWinTitle
     }
-return
 
-DrawBroadcastWin:
-    Rx = 256
-    Ry = 256
-    Gui BroadcastWin: New, +AlwaysOnTop -Caption hwndBroadcastWinHwnd
-    Gui BroadcastWin: Margin, 0,0
-    Gui BroadcastWin: Show, % "w" Rx " h" Ry " x0 y0"
-    Gosub, UpdateBroadcastWinTitle
-    WinSet Transparent, 0, ahk_id %BroadcastWinHwnd% ; makes the window invisible to magnification
-    if(IsDebug){
-        WinSet Transparent, 255, ahk_id %BroadcastWinHwnd%
+}
+
+DrawBroadcastWin() {
+    global
+
+    Rx := 256
+    Ry := 256
+    BroadcastWin := Gui("+AlwaysOnTop -Caption")
+    BroadcastWinHwnd := BroadcastWin.Hwnd
+    BroadcastWin.MarginX := 0
+    BroadcastWin.MarginY := 0
+    BroadcastWin.Show("w" Rx " h" Ry " x0 y0")
+
+    BroadcastWin.OnEvent("Size", BroadcastWin_Size)
+    BroadcastWin_Size(GuiObj, MinMax, Width, Height) {
+        Rx := Width
+        Ry := Height
     }
-    WinGet PrintSourceID, ID
-    WinSet, ExStyle, +0x80020, ahk_id %BroadcastWinHwnd%
 
-    hdd_frame := DllCall("GetDC", UInt, PrintSourceID)
-    hdc_frame := DllCall("GetDC", UInt, BroadcastWinHwnd)
+    BroadcastWin.OnEvent("Close", BroadcastWin_Close)
+    BroadcastWin_Close(GuiObj) {
+        DllCall("gdi32.dll\DeleteDC", "UInt", hdc_frame)
+        DllCall("gdi32.dll\DeleteDC", "UInt", hdd_frame)
+    }
+
+    UpdateBroadcastWinTitle()
+
+    WinSetTransparent(0, "ahk_id " BroadcastWinHwnd)
+
+    PrintSourceID := 0
+    WinSetExStyle(+0x80020, "ahk_id " BroadcastWinHwnd)
+
+    hdd_frame := DllCall("GetDC", "UInt", PrintSourceID)
+    hdc_frame := DllCall("GetDC", "UInt", BroadcastWinHwnd)
 
     SetTimer RepaintBroadcastWindow, 16 ; 16=60fps
-Return
+}
 
-RepaintBroadcastWindow:
-    WinGetPos x, y,w,h, ahk_id %mainWin_id%
-    MouseGetPos, mx, my
-    px:=x
-    py:=y
+
+RepaintBroadcastWindow() {
+    global
+    WinGetPos(&x, &y, &w, &h, "ahk_id " mainWin_id)
+    MouseGetPos(&mx, &my)
+
+    px := x
+    py := y
 
     xz := x
     yz := y
 
-    DllCall("gdi32.dll\BitBlt", UInt,hdc_frame, Int,0, Int,0, Int,Rx, Int,Ry
-        , UInt,hdd_frame, UInt,xz, UInt,yz, UInt,0xCC0020)
+    DllCall("gdi32.dll\BitBlt", "UInt", hdc_frame, "Int", 0, "Int", 0, "Int", Rx, "Int", Ry
+        , "UInt", hdd_frame, "UInt", xz, "UInt", yz, "UInt", 0xCC0020)
 
-    if(IsDrawMouseCursor){
+    if (IsDrawMouseCursor) {
         mx -= x
         my -= y
         CaptureCursor(hdc_frame, mx, my)
     }
-Return
+}
 
-HandleSet1920x1080Size:
-    SysGet, SM_CXSIZEFRAME, 32
-    SysGet, SM_CYSIZEFRAME, 33
-    SysGet, SM_CYMENU, 15
-    SysGet, SM_CYCAPTION, 4
 
-    Height := 1080 - ( SM_CYCAPTION + SM_CYSIZEFRAME*2 )
-    Width := 1920 - ( SM_CYSIZEFRAME*2 )
-    Gui, Main: Show, w%Width% h%Height% xCenter yCenter
-Return
+HandleSet1920x1080Size(*) {
+    global
+    SM_CXSIZEFRAME := 32
+    SM_CYSIZEFRAME := 33
+    SM_CYMENU := 15
+    SM_CYCAPTION := 4
 
-BroadcastWinGuiSize:
-    Rx := A_GuiWidth
-    Ry := A_GuiHeight
-Return
+    Height := 1080 - (SysGet(SM_CYCAPTION) + SysGet(SM_CYSIZEFRAME) * 2)
+    Width := 1920 - (SysGet(SM_CYSIZEFRAME) * 2)
 
-BroadcastWinGuiClose:
-    DllCall("gdi32.dll\DeleteDC", UInt,hdc_frame )
-    DllCall("gdi32.dll\DeleteDC", UInt,hdd_frame )
-Return
+    MainGui.Show("w" Width " h" Height "xCenter yCenter")
+}
 
-CaptureCursor(hDC, posX, posY)
-{
-    VarSetCapacity(CURSORINFO, A_PtrSize=8?24:20, 0)
-    NumPut(A_PtrSize=8?24:20, &CURSORINFO, 0, "UInt")
-    DllCall("user32\GetCursorInfo", Ptr,&CURSORINFO)
-    vState := NumGet(&CURSORINFO, 4, "UInt") ;flags
-    hCursor := NumGet(&CURSORINFO, 8, "UInt") ;hCursor
-    vCurX := NumGet(&CURSORINFO, A_PtrSize=8?16:12, "Int") ;ptScreenPos ;x
-    vCurY := NumGet(&CURSORINFO, A_PtrSize=8?20:16, "Int") ;ptScreenPos ;y
-    if vState && (hCursor := DllCall("user32\CopyIcon", Ptr,hCursor, Ptr))
+
+CaptureCursor(hDC, posX, posY) {
+    global
+    CURSORINFO := Buffer(A_PtrSize=8?24:20, 0)
+    NumPut("UInt", A_PtrSize=8?24:20, CURSORINFO, 0,)
+    DllCall("user32\GetCursorInfo", "Ptr", CURSORINFO)
+    vState := NumGet(CURSORINFO, 4, "UInt") ;flags
+    hCursor := NumGet(CURSORINFO, 8, "UInt") ;hCursor
+    vCurX := NumGet(CURSORINFO, A_PtrSize = 8 ? 16 : 12, "Int") ;ptScreenPos ;x
+    vCurY := NumGet(CURSORINFO, A_PtrSize = 8 ? 20 : 16, "Int") ;ptScreenPos ;y
+    if vState && (hCursor := DllCall("user32\CopyIcon", "Ptr", hCursor, "Ptr"))
     {
-        VarSetCapacity(ICONINFO, A_PtrSize=8?32:20, 0)
-        DllCall("user32\GetIconInfo", Ptr,hCursor, Ptr,&ICONINFO)
-        ;vIsIcon := NumGet(&ICONINFO, 0, "Int") ;fIcon
-        vHotspotX := NumGet(&ICONINFO, 4, "UInt") ;xHotspot
-        vHotspotY := NumGet(&ICONINFO, 8, "UInt") ;yHotspot
-        hBMMask := NumGet(&ICONINFO, A_PtrSize=8?16:12, "Ptr") ;hbmMask
-        hBMColor := NumGet(&ICONINFO, A_PtrSize=8?24:16, "Ptr") ;hbmColor
+        ICONINFO := Buffer(A_PtrSize = 8 ? 32 : 20, 0)
+        DllCall("user32\GetIconInfo", "Ptr", hCursor, "Ptr", ICONINFO)
+        vHotspotX := NumGet(ICONINFO, 4, "UInt") ;xHotspot
+        vHotspotY := NumGet(ICONINFO, 8, "UInt") ;yHotspot
+        hBMMask := NumGet(ICONINFO, A_PtrSize = 8 ? 16 : 12, "Ptr") ;hbmMask
+        hBMColor := NumGet(ICONINFO, A_PtrSize = 8 ? 24 : 16, "Ptr") ;hbmColor
 
-        DllCall("user32\DrawIcon", Ptr,hDC, Int,posX, Int,posY, Ptr,hCursor)
-        DllCall("user32\DestroyIcon", Ptr,hCursor)
+        DllCall("user32\DrawIcon", "Ptr", hDC, "Int", posX, "Int", posY, "Ptr", hCursor)
+        DllCall("user32\DestroyIcon", "Ptr", hCursor)
         if hBMMask {
-            DllCall("gdi32\DeleteObject", Ptr,hBMMask)
+            DllCall("gdi32\DeleteObject", "Ptr", hBMMask)
         }
         if hBMColor {
-            DllCall("gdi32\DeleteObject", Ptr,hBMColor)
+            DllCall("gdi32\DeleteObject", "Ptr", hBMColor)
         }
     }
 }
 
-UpdateBroadcastWinTitle:
-    newTitle:=BroadcastWinTitle
-    if(IsDrawMouseCursor){
-        newTitle.=" (M)"
+UpdateBroadcastWinTitle() {
+    global
+    newTitle := BroadcastWinTitle
+    if (IsDrawMouseCursor) {
+        newTitle .= " (M)"
     }
-    WinSetTitle, % "ahk_id " BroadcastWinHwnd,, %newTitle%
-Return
-
-DetectMinimizeBroadcastWin:
-    DllCall( "RegisterShellHookWindow", UInt,BroadcastWinHwnd )
-    MsgNum := DllCall( "RegisterWindowMessage", Str,"SHELLHOOK" )
-    OnMessage( MsgNum, "ShellMessage" )
-Return
-
-ShellMessage( wParam,lParam ) {
-    WinGet, status,MinMax,ahk_id %BroadcastWinHwnd%
-
-    if(status = -1){
-        WinActivate, ahk_id %BroadcastWinHwnd%
-    }
+    WinSetTitle(newTitle, "ahk_id " BroadcastWinHwnd)
 }
 
-MainGuiClose:
-ExitApp
-Return
+
+DetectMinimizeBroadcastWin() {
+    global
+    DllCall("RegisterShellHookWindow", "UInt", BroadcastWinHwnd)
+    MsgNum := DllCall("RegisterWindowMessage", "Str", "SHELLHOOK")
+    OnMessage(MsgNum, ShellMessage)
+}
+
+ShellMessage(wParam, lParam, msg, hwnd) {
+    global
+    status := WinGetMinMax("ahk_id " BroadcastWinHwnd)
+
+    if (status = -1) {
+        WinActivate("ahk_id " BroadcastWinHwnd)
+    }
+}
