@@ -1,13 +1,5 @@
-﻿#SingleInstance, Force
-SendMode Input
-SetWorkingDir, %A_ScriptDir%
+﻿#Requires AutoHotkey v2.0
+#SingleInstance Force
 ;---
 
-Alt::
-    KeyWait, Alt
-return
-
-LAlt Up::
-    if (A_PriorKey = "Alt")
-        return
-return
+~Alt::Send "{Blind}{vkE8}"

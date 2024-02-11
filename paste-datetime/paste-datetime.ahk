@@ -1,9 +1,8 @@
-﻿#SingleInstance, Force
-SendMode Input
-SetWorkingDir, %A_ScriptDir%
-;--------
+﻿#Requires AutoHotkey v2.0
+#SingleInstance Force
+;---
 
-#t::
-    FormatTime, T, %A_Now%, yyyy-MM-dd_hh-mm-ss
-    SendInput, %T%
-return
+#t:: {
+    Time := FormatTime(A_Now, "yyyy-MM-dd_hh-mm-ss")
+    SendInput Time
+}
