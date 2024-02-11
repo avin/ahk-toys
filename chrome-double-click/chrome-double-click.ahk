@@ -1,12 +1,11 @@
-#NoEnv
-#SingleInstance, Force
-SendMode, Input
-SetBatchLines, -1
-SetWorkingDir, %A_ScriptDir%
+#Requires AutoHotkey v2.0
+#SingleInstance Force
 
-#If WinActive("ahk_class Chrome_WidgetWin_1")
-  ~LButton::
-    if (A_TimeSincePriorHotkey < 400) and (A_TimeSincePriorHotkey <> -1)
-      MouseMove, 1, 0, 0, R
-    return
-#If
+
+#HotIf WinActive("ahk_class Chrome_WidgetWin_1")
+~LButton::
+{
+    if (ThisHotkey = A_PriorHotkey && A_TimeSincePriorHotkey < 400) {
+        MouseMove(1, 0, 0, "R")
+    }
+}
