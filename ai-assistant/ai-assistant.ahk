@@ -7,6 +7,7 @@ global ChatGptOptions := Map(
     "ApiKey", IniRead("config.ini", "ChatGpt", "ApiKey"),
 )
 
+
 ProcessTextWithChatGpt(content, maxTokens := 300, temperature := 0.5) {
     if (!ChatGptOptions["ApiKey"]) {
         OutputDebug("ChatGpt ApiKey required")
@@ -154,4 +155,15 @@ AppsKey:: ; MenuKey
     MyGui.Move(xpos, ypos)
 
     EditBox.Text := TranslateTextIntoRussian(A_Clipboard)
+
+    SetTimer checkWinFocusLost, 100
+
+    checkWinFocusLost()
+    {
+        If (!WinActive("ahk_id" MyGui.Hwnd))
+        {
+            MyGui.Destroy()
+            SetTimer checkWinFocusLost, 0
+        }
+    }
 }
