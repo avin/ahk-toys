@@ -130,10 +130,12 @@ Win__HalfRight() {
         CoordMode "Mouse", "Screen"
         MouseGetPos &Mouse_X, &Mouse_Y
         if (Mouse_X < 10) {
+            Sleep(50)
             Win__HalfLeft() ; Перемещение окна на левую половину экрана, если мышь у левого края
         }
 
         if (Mouse_X > (A_ScreenWidth - 10)) {
+            Sleep(50)
             Win__HalfRight() ; Перемещение окна на правую половину экрана, если мышь у правого края
         }
     }
