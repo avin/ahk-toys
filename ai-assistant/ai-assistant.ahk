@@ -25,7 +25,7 @@ ProcessTextWithChatGpt(content, maxTokens := 300, temperature := 0.5) {
         "max_tokens", maxTokens
     )
 
-    url := "https://api.openai.com/v1/chat/completions"
+    url := "https://api.proxyapi.ru/openai/v1/chat/completions"
     jsonData := Jxon_dump(data, 4)
 
     whr := ComObject("WinHttp.WinHttpRequest.5.1")
