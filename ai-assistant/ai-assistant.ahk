@@ -88,6 +88,7 @@ FixGrammar(text) {
 ; ---------------------------------------------------------------------------------------------
 
 ; Показ меню с действиями над выделенным текстом (Если текст не выделен, то предварительно будет прожата Ctrl+A)
+#HotIf !WinActive("ahk_exe PathOfExileSteam.exe")
 ^RButton:: ; Ctrl+RightMouseButton
 AppsKey:: ; MenuKey
 ^+x:: ; Ctrl+Shift+X
@@ -131,6 +132,9 @@ AppsKey:: ; MenuKey
 ; Перевод выделенного текста
 +RButton:: ; Shift+RightMouseButton
 {
+    if WinActive("ahk_exe PathOfExileSteam.exe")
+        return
+
     A_Clipboard := ""
     Send "^c"
     if !ClipWait(0.25)
@@ -167,3 +171,4 @@ AppsKey:: ; MenuKey
         }
     }
 }
+#HotIf

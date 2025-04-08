@@ -1,5 +1,5 @@
 ; Ctrl+Space. Поднимает окно на верх и делает ему opacity 75%
-^SPACE::
+^!Space::
 WinGet, id1, ID, A
 
 WinGet, ExStyle, ExStyle, ahk_id %id1%

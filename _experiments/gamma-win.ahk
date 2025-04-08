@@ -7,19 +7,24 @@ DetectHiddenWindows, On
 global overlayActive := false
 global overlayGui := 0
 global hTarget := 0
+global transparency := LoadTransparency() ; Загружаем сохранённую прозрачность
 
-; Нажимаем Win+I, чтобы включить/выключить белую полупрозрачную маску
+; Константы
+MIN_TRANSPARENCY := 10
+MAX_TRANSPARENCY := 255
+STEP := 5 ; ~2% от 255
+
+; Win+G — включить/выключить оверлей
 #g::
 {
     if overlayActive
     {
-        ; Если маска уже включена, убираем
         overlayActive := false
         Gui, Destroy
+        SetTimer, UpdateOverlay, Off
         return
     }
 
-    ; Создаём поверх активного окна
     hTarget := WinExist("A")
     if (!hTarget) {
         return
@@ -27,19 +32,38 @@ global hTarget := 0
 
     overlayActive := true
 
-    ; Создаём окно без рамки, всегда сверху, клики по нему «пробивают» насквозь
-    ; WS_EX_LAYERED (0x80000) и WS_EX_TRANSPARENT (0x20) вместе дают «кликабельность сквозь».
     Gui, +LastFound +ToolWindow -Caption +AlwaysOnTop +E0x80000 +E0x20
     Gui, Color, White
     overlayGui := WinExist()
 
-    ; Делаем окно полупрозрачным (25%).
-    ; Допустимые значения: 0 (полностью прозрачно) ... 255 (полностью непрозрачно).
-    ; Примерно 64 = 25% непрозрачности.
-    WinSet, Transparent, 64, ahk_id %overlayGui%
-
-    ; Запускаем цикл для отслеживания изменения позиции окна
+    WinSet, Transparent, %transparency%, ahk_id %overlayGui%
     SetTimer, UpdateOverlay, 50
+}
+return
+
+; Увеличить прозрачность (Win+9)
+#9::
+{
+    transparency += STEP
+    if (transparency > MAX_TRANSPARENCY)
+        transparency := MAX_TRANSPARENCY
+
+    SaveTransparency(transparency)
+    if (overlayActive)
+        WinSet, Transparent, %transparency%, ahk_id %overlayGui%
+}
+return
+
+; Уменьшить прозрачность (Win+8)
+#8::
+{
+    transparency -= STEP
+    if (transparency < MIN_TRANSPARENCY)
+        transparency := MIN_TRANSPARENCY
+
+    SaveTransparency(transparency)
+    if (overlayActive)
+        WinSet, Transparent, %transparency%, ahk_id %overlayGui%
 }
 return
 
@@ -51,7 +75,6 @@ UpdateOverlay:
         return
     }
 
-    ; Проверяем, не закрыли ли целевое окно
     if !WinExist("ahk_id " . hTarget)
     {
         overlayActive := false
@@ -60,7 +83,6 @@ UpdateOverlay:
         return
     }
 
-    ; Получаем координаты целевого окна
     VarSetCapacity(rect, 16, 0)
     if (DllCall("GetWindowRect", "ptr", hTarget, "ptr", &rect))
     {
@@ -72,7 +94,6 @@ UpdateOverlay:
         width  := right - left
         height := bottom - top
 
-        ; Если окно не свернуто (h>0, w>0), позиционируем оверлей
         if (width > 0 && height > 0)
         {
             WinMove, ahk_id %overlayGui%,, left, top, width, height
@@ -86,5 +107,17 @@ UpdateOverlay:
 }
 return
 
-; При выходе из скрипта корректно закрываем всё
-Esc::ExitApp
+; --- Хелперы для работы с реестром ---
+
+SaveTransparency(val)
+{
+    RegWrite, REG_DWORD, HKEY_CURRENT_USER\Software\MyOverlayTool, Transparency, %val%
+}
+
+LoadTransparency()
+{
+    RegRead, val, HKEY_CURRENT_USER\Software\MyOverlayTool, Transparency
+    if (ErrorLevel || val = "")
+        return 64 ; Значение по умолчанию (~25%)
+    return val
+}
