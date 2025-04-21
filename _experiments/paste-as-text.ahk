@@ -1,6 +1,6 @@
 #Requires AutoHotkey v2.0
 
-#z:: {
+#b:: {
     files := GetClipboardFiles()
     if !files.Length {
         MsgBox 'Нет файлов в буфере обмена.'
@@ -22,7 +22,7 @@
     nl := "`n"
     xml := '<files>' . nl
     for path in allFiles {
-        rel := '.' . SubStr(path, StrLen(root) + 1)
+        rel := SubStr(path, StrLen(root) + 1)
         content := GetFileContent(path)
         xml .= '<file path="' . rel . '">' . nl
         xml .= content . nl
@@ -86,10 +86,10 @@ StrCommonPrefix(s1, s2) {
 }
 
 GetFileContent(path) {
-    try content := FileRead(path)
+    try content := FileRead(path, "UTF-8")
     catch
         return 'BINARY_DATA'
-    if RegExMatch(content, '[^\x09\x0A\x0D\x20-\x7E]')
+    if RegExMatch(content, "\x00")
         return 'BINARY_DATA'
     return content
 }
