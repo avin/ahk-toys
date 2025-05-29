@@ -20,7 +20,7 @@ F4::OpenInEditor()
 
 ; --- и в стандартных диалогах «Открыть/Сохранить» ----------
 #IfWinActive ahk_class #32770                ; диалоги CommonItemDialog
-F4::OpenInCuda()
+F4::OpenInEditor()
 #IfWinActive
 ; -----------------------------------------------------------
 
