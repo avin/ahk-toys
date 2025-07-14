@@ -77,8 +77,8 @@ UpdateButtonPosition()
         return
 
     ; Позиционируем кнопку по центру сверху окна
-    ButtonX := WinX + (WinWidth - 100) // 2
-    ButtonY := WinY - 20
+    ButtonX := WinX + (WinWidth - 110)
+    ButtonY := WinY + 30
 
     ; Перемещаем кнопку
     Gui, FloatingButton:Show, x%ButtonX% y%ButtonY% w100 h20 NoActivate
