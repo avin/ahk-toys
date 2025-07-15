@@ -5,10 +5,20 @@ SendMode Input
 SetWorkingDir %A_ScriptDir%
 
 global SlackToken
+global WorkStartHour
+global WorkEndHour
+global lastProcessedProject
+global currentRecentProjectsPath
+global lastWorkingStatus ; для отслеживания смены рабочего/нерабочего времени
+
+; Читаем настройки из конфигурационного файла
 IniRead, SlackToken, config.ini, Slack, Token, ""
+IniRead, WorkStartHour, config.ini, WorkingHours, StartHour, 10
+IniRead, WorkEndHour, config.ini, WorkingHours, EndHour, 19
 
 ; WebStorm Git Branch Monitor
 ; Автоматически отслеживает активное окно каждые 5 секунд
+; Обновляет статус в Slack только в рабочие часы
 
 ; Глобальная переменная для кэширования пути к конфигурации recentProjects.xml
 currentRecentProjectsPath := ""
@@ -16,10 +26,48 @@ currentRecentProjectsPath := ""
 ; Переменная для отслеживания последнего обработанного проекта
 lastProcessedProject := ""
 
+; Переменная для отслеживания последнего статуса рабочего времени
+lastWorkingStatus := IsWorkingHours()
+
+; Инициализация при запуске
+Gosub, InitializeScript
+
 ; Запускаем таймер для проверки каждые 5 секунд (5000 мс)
 SetTimer, CheckActiveWindow, 5000
 
+; Дополнительный таймер для проверки смены рабочего времени каждую минуту
+SetTimer, CheckWorkingHoursChange, 60000
+
+; Инициализация скрипта при запуске
+InitializeScript:
+    if (!IsWorkingHours()) {
+        ; Если запускаемся в нерабочее время - сбрасываем статус
+        ClearSlackStatus()
+    }
+return
+
+; Проверка смены рабочего времени
+CheckWorkingHoursChange:
+    currentWorkingStatus := IsWorkingHours()
+
+    ; Если статус рабочего времени изменился
+    if (currentWorkingStatus != lastWorkingStatus) {
+        if (!currentWorkingStatus) {
+            ; Если перешли в нерабочее время - сбрасываем статус
+            ClearSlackStatus()
+            lastProcessedProject := "" ; Сбрасываем кэш проекта
+        }
+        lastWorkingStatus := currentWorkingStatus
+    }
+return
+
 CheckActiveWindow:
+    ; Проверяем, находимся ли мы в рабочее время
+    if (!IsWorkingHours()) {
+        ; Если нерабочее время - ничего не делаем
+        return
+    }
+
     ; Получаем информацию об активном окне
     WinGet, activeProcess, ProcessName, A
     WinGetTitle, activeTitle, A
@@ -52,10 +100,48 @@ CheckActiveWindow:
                 }
             }
         }
-    } else {
-        ; Если активное окно не WebStorm, ничего не делаем, статус не должен меняться
     }
 return
+
+; Функция для проверки рабочего времени
+IsWorkingHours() {
+    try {
+        FormatTime, currentHour, , HH
+        currentHour := currentHour + 0 ; Конвертируем в число
+
+        return (currentHour >= WorkStartHour and currentHour < WorkEndHour)
+    } catch e {
+        return false
+    }
+}
+
+; Функция для сброса статуса в Slack
+ClearSlackStatus() {
+    try {
+        ; Создаём WinHTTP объект
+        http := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+
+        ; Настраиваем запрос
+        http.Open("POST", "https://slack.com/api/users.profile.set", false)
+
+        ; Устанавливаем заголовки
+        http.SetRequestHeader("Authorization", "Bearer " . SlackToken)
+        http.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
+
+        ; Формируем JSON для сброса статуса
+        jsonBody := "{""profile"":{""status_text"":"""",""status_emoji"":"""",""status_expiration"":0}}"
+
+        ; Отправляем запрос
+        http.Send(jsonBody)
+
+        ; Получаем ответ (без вывода сообщений)
+        responseText := http.ResponseText
+        statusCode := http.Status
+
+    } catch e {
+        ; Обрабатываем ошибки молча
+    }
+}
 
 ; Функция для извлечения LETTERS-NUMBERS из названия ветки
 ExtractTaskIdFromBranch(branchName) {
