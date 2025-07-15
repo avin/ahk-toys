@@ -1,4 +1,4 @@
-#NoEnv
+п»ї#NoEnv
 #SingleInstance Force
 #Persistent
 SendMode Input
@@ -8,60 +8,59 @@ global SlackToken
 IniRead, SlackToken, config.ini, Slack, Token, ""
 
 ; WebStorm Git Branch Monitor
-; Автоматически отслеживает активное окно каждые 5 секунд
+; РђРІС‚РѕРјР°С‚РёС‡РµСЃРєРё РѕС‚СЃР»РµР¶РёРІР°РµС‚ Р°РєС‚РёРІРЅРѕРµ РѕРєРЅРѕ РєР°Р¶РґС‹Рµ 5 СЃРµРєСѓРЅРґ
 
-; Глобальная переменная для кэширования пути к конфигурации recentProjects.xml
+; Р“Р»РѕР±Р°Р»СЊРЅР°СЏ РїРµСЂРµРјРµРЅРЅР°СЏ РґР»СЏ РєСЌС€РёСЂРѕРІР°РЅРёСЏ РїСѓС‚Рё Рє РєРѕРЅС„РёРіСѓСЂР°С†РёРё recentProjects.xml
 currentRecentProjectsPath := ""
 
-; Переменная для отслеживания последнего обработанного проекта
+; РџРµСЂРµРјРµРЅРЅР°СЏ РґР»СЏ РѕС‚СЃР»РµР¶РёРІР°РЅРёСЏ РїРѕСЃР»РµРґРЅРµРіРѕ РѕР±СЂР°Р±РѕС‚Р°РЅРЅРѕРіРѕ РїСЂРѕРµРєС‚Р°
 lastProcessedProject := ""
 
-; Запускаем таймер для проверки каждые 5 секунд (5000 мс)
+; Р—Р°РїСѓСЃРєР°РµРј С‚Р°Р№РјРµСЂ РґР»СЏ РїСЂРѕРІРµСЂРєРё РєР°Р¶РґС‹Рµ 5 СЃРµРєСѓРЅРґ (5000 РјСЃ)
 SetTimer, CheckActiveWindow, 5000
 
 CheckActiveWindow:
-    ; Получаем информацию об активном окне
+    ; РџРѕР»СѓС‡Р°РµРј РёРЅС„РѕСЂРјР°С†РёСЋ РѕР± Р°РєС‚РёРІРЅРѕРј РѕРєРЅРµ
     WinGet, activeProcess, ProcessName, A
     WinGetTitle, activeTitle, A
 
-    ; Проверяем, является ли активное приложение WebStorm
+    ; РџСЂРѕРІРµСЂСЏРµРј, СЏРІР»СЏРµС‚СЃСЏ Р»Рё Р°РєС‚РёРІРЅРѕРµ РїСЂРёР»РѕР¶РµРЅРёРµ WebStorm
     if (activeProcess = "webstorm64.exe" or activeProcess = "webstorm.exe") {
-        ; Получаем PID активного окна
+        ; РџРѕР»СѓС‡Р°РµРј PID Р°РєС‚РёРІРЅРѕРіРѕ РѕРєРЅР°
         WinGet, activePID, PID, A
 
-        ; Получаем путь к проекту WebStorm
+        ; РџРѕР»СѓС‡Р°РµРј РїСѓС‚СЊ Рє РїСЂРѕРµРєС‚Сѓ WebStorm
         projectPath := GetWebStormProjectPath(activePID)
 
         if (projectPath != "") {
-            ; Проверяем, не обрабатывали ли мы уже этот проект недавно
+            ; РџСЂРѕРІРµСЂСЏРµРј, РЅРµ РѕР±СЂР°Р±Р°С‚С‹РІР°Р»Рё Р»Рё РјС‹ СѓР¶Рµ СЌС‚РѕС‚ РїСЂРѕРµРєС‚ РЅРµРґР°РІРЅРѕ
             if (projectPath != lastProcessedProject) {
-                ; Получаем название git ветки
+                ; РџРѕР»СѓС‡Р°РµРј РЅР°Р·РІР°РЅРёРµ git РІРµС‚РєРё
                 gitBranch := GetGitBranch(projectPath)
 
                 if (gitBranch != "") {
-                    ; Проверяем формат ветки и извлекаем LETTERS-NUMBERS
+                    ; РџСЂРѕРІРµСЂСЏРµРј С„РѕСЂРјР°С‚ РІРµС‚РєРё Рё РёР·РІР»РµРєР°РµРј LETTERS-NUMBERS
                     taskId := ExtractTaskIdFromBranch(gitBranch)
 
                     if (taskId != "") {
-                        ; Обновляем статус в Slack
+                        ; РћР±РЅРѕРІР»СЏРµРј СЃС‚Р°С‚СѓСЃ РІ Slack
                         UpdateSlackStatus(taskId)
 
-                        ; Запоминаем обработанный проект
+                        ; Р—Р°РїРѕРјРёРЅР°РµРј РѕР±СЂР°Р±РѕС‚Р°РЅРЅС‹Р№ РїСЂРѕРµРєС‚
                         lastProcessedProject := projectPath
                     }
                 }
             }
         }
     } else {
-        ; Если активное окно не WebStorm, сбрасываем lastProcessedProject
-        lastProcessedProject := ""
+        ; Р•СЃР»Рё Р°РєС‚РёРІРЅРѕРµ РѕРєРЅРѕ РЅРµ WebStorm, РЅРёС‡РµРіРѕ РЅРµ РґРµР»Р°РµРј, СЃС‚Р°С‚СѓСЃ РЅРµ РґРѕР»Р¶РµРЅ РјРµРЅСЏС‚СЊСЃСЏ
     }
 return
 
-; Функция для извлечения LETTERS-NUMBERS из названия ветки
+; Р¤СѓРЅРєС†РёСЏ РґР»СЏ РёР·РІР»РµС‡РµРЅРёСЏ LETTERS-NUMBERS РёР· РЅР°Р·РІР°РЅРёСЏ РІРµС‚РєРё
 ExtractTaskIdFromBranch(branchName) {
     try {
-        ; Проверяем формат feature/LETTERS-NUMBERS
+        ; РџСЂРѕРІРµСЂСЏРµРј С„РѕСЂРјР°С‚ feature/LETTERS-NUMBERS
         if (RegExMatch(branchName, "i)^feature/([A-Z]+-\d+)", match)) {
             return match1
         }
@@ -71,35 +70,35 @@ ExtractTaskIdFromBranch(branchName) {
     }
 }
 
-; Функция для обновления статуса в Slack
+; Р¤СѓРЅРєС†РёСЏ РґР»СЏ РѕР±РЅРѕРІР»РµРЅРёСЏ СЃС‚Р°С‚СѓСЃР° РІ Slack
 UpdateSlackStatus(taskId) {
     try {
-        ; Создаём WinHTTP объект
+        ; РЎРѕР·РґР°С‘Рј WinHTTP РѕР±СЉРµРєС‚
         http := ComObjCreate("WinHttp.WinHttpRequest.5.1")
 
-        ; Настраиваем запрос
+        ; РќР°СЃС‚СЂР°РёРІР°РµРј Р·Р°РїСЂРѕСЃ
         http.Open("POST", "https://slack.com/api/users.profile.set", false)
 
-        ; Устанавливаем заголовки
+        ; РЈСЃС‚Р°РЅР°РІР»РёРІР°РµРј Р·Р°РіРѕР»РѕРІРєРё
         http.SetRequestHeader("Authorization", "Bearer " . SlackToken)
         http.SetRequestHeader("Content-Type", "application/json; charset=utf-8")
 
-        ; Формируем JSON (простое конкатенирование строк)
-        jsonBody := "{""profile"":{""status_text"":""Работаю над " . taskId . """,""status_emoji"":"":technologist:"",""status_expiration"":0}}"
+        ; Р¤РѕСЂРјРёСЂСѓРµРј JSON (РїСЂРѕСЃС‚РѕРµ РєРѕРЅРєР°С‚РµРЅРёСЂРѕРІР°РЅРёРµ СЃС‚СЂРѕРє)
+        jsonBody := "{""profile"":{""status_text"":""Р Р°Р±РѕС‚Р°СЋ РЅР°Рґ " . taskId . """,""status_emoji"":"":technologist:"",""status_expiration"":0}}"
 
-        ; Отправляем запрос
+        ; РћС‚РїСЂР°РІР»СЏРµРј Р·Р°РїСЂРѕСЃ
         http.Send(jsonBody)
 
-        ; Получаем ответ (без вывода сообщений)
+        ; РџРѕР»СѓС‡Р°РµРј РѕС‚РІРµС‚ (Р±РµР· РІС‹РІРѕРґР° СЃРѕРѕР±С‰РµРЅРёР№)
         responseText := http.ResponseText
         statusCode := http.Status
 
     } catch e {
-        ; Обрабатываем ошибки молча
+        ; РћР±СЂР°Р±Р°С‚С‹РІР°РµРј РѕС€РёР±РєРё РјРѕР»С‡Р°
     }
 }
 
-; Функция для поиска самого позднего файла recentProjects.xml
+; Р¤СѓРЅРєС†РёСЏ РґР»СЏ РїРѕРёСЃРєР° СЃР°РјРѕРіРѕ РїРѕР·РґРЅРµРіРѕ С„Р°Р№Р»Р° recentProjects.xml
 FindLatestRecentProjectsFile() {
     try {
         jetbrainsPath := A_AppData . "\JetBrains"
@@ -111,7 +110,7 @@ FindLatestRecentProjectsFile() {
         latestFile := ""
         latestTime := 0
 
-        ; Ищем все папки начинающиеся с "WebStorm"
+        ; РС‰РµРј РІСЃРµ РїР°РїРєРё РЅР°С‡РёРЅР°СЋС‰РёРµСЃСЏ СЃ "WebStorm"
         Loop, Files, %jetbrainsPath%\WebStorm*, D
         {
             recentProjectsFile := A_LoopFileFullPath . "\options\recentProjects.xml"
@@ -119,7 +118,7 @@ FindLatestRecentProjectsFile() {
             if (FileExist(recentProjectsFile)) {
                 FileGetTime, fileTime, %recentProjectsFile%, M
 
-                ; Сравниваем время модификации
+                ; РЎСЂР°РІРЅРёРІР°РµРј РІСЂРµРјСЏ РјРѕРґРёС„РёРєР°С†РёРё
                 if (fileTime > latestTime) {
                     latestTime := fileTime
                     latestFile := recentProjectsFile
@@ -134,31 +133,31 @@ FindLatestRecentProjectsFile() {
     }
 }
 
-; Функция для получения кэшированного пути к recentProjects.xml с проверкой
+; Р¤СѓРЅРєС†РёСЏ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РєСЌС€РёСЂРѕРІР°РЅРЅРѕРіРѕ РїСѓС‚Рё Рє recentProjects.xml СЃ РїСЂРѕРІРµСЂРєРѕР№
 GetCurrentRecentProjectsPath() {
-    ; Если путь уже найден, возвращаем его
+    ; Р•СЃР»Рё РїСѓС‚СЊ СѓР¶Рµ РЅР°Р№РґРµРЅ, РІРѕР·РІСЂР°С‰Р°РµРј РµРіРѕ
     if (currentRecentProjectsPath != "" and FileExist(currentRecentProjectsPath)) {
         return currentRecentProjectsPath
     }
 
-    ; Иначе производим поиск
+    ; РРЅР°С‡Рµ РїСЂРѕРёР·РІРѕРґРёРј РїРѕРёСЃРє
     currentRecentProjectsPath := FindLatestRecentProjectsFile()
     return currentRecentProjectsPath
 }
 
-; Функция для получения пути к проекту WebStorm через идентификацию названия проекта и frameTitle
+; Р¤СѓРЅРєС†РёСЏ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РїСѓС‚Рё Рє РїСЂРѕРµРєС‚Сѓ WebStorm С‡РµСЂРµР· РёРґРµРЅС‚РёС„РёРєР°С†РёСЋ РЅР°Р·РІР°РЅРёСЏ РїСЂРѕРµРєС‚Р° Рё frameTitle
 GetWebStormProjectPath(pid) {
     try {
-        ; Получаем заголовок активного окна
+        ; РџРѕР»СѓС‡Р°РµРј Р·Р°РіРѕР»РѕРІРѕРє Р°РєС‚РёРІРЅРѕРіРѕ РѕРєРЅР°
         WinGetTitle, windowTitle, A
 
-        ; Извлекаем имя проекта (первое слово из тайтла)
+        ; РР·РІР»РµРєР°РµРј РёРјСЏ РїСЂРѕРµРєС‚Р° (РїРµСЂРІРѕРµ СЃР»РѕРІРѕ РёР· С‚Р°Р№С‚Р»Р°)
         projectName := ExtractProjectNameFromTitle(windowTitle)
         if (projectName = "") {
             return ""
         }
 
-        ; Ищем проект в recentProjects.xml по frameTitle
+        ; РС‰РµРј РїСЂРѕРµРєС‚ РІ recentProjects.xml РїРѕ frameTitle
         projectPath := FindProjectByFrameTitle(projectName)
 
         return projectPath
@@ -168,17 +167,17 @@ GetWebStormProjectPath(pid) {
     }
 }
 
-; Функция для извлечения имени проекта из заголовка окна (первое слово)
+; Р¤СѓРЅРєС†РёСЏ РґР»СЏ РёР·РІР»РµС‡РµРЅРёСЏ РёРјРµРЅРё РїСЂРѕРµРєС‚Р° РёР· Р·Р°РіРѕР»РѕРІРєР° РѕРєРЅР° (РїРµСЂРІРѕРµ СЃР»РѕРІРѕ)
 ExtractProjectNameFromTitle(windowTitle) {
     try {
-        ; Ищем первый пробел до дефиса
+        ; РС‰РµРј РїРµСЂРІС‹Р№ РїСЂРѕР±РµР» РґРѕ РґРµС„РёСЃР°
         spacePos := InStr(windowTitle, " ")
 
         if (spacePos > 0) {
             projectName := Trim(SubStr(windowTitle, 1, spacePos - 1))
             return projectName
         } else {
-            ; Если пробелов нет, возвращаем весь заголовок
+            ; Р•СЃР»Рё РїСЂРѕР±РµР»РѕРІ РЅРµС‚, РІРѕР·РІСЂР°С‰Р°РµРј РІРµСЃСЊ Р·Р°РіРѕР»РѕРІРѕРє
             return Trim(windowTitle)
         }
 
@@ -187,7 +186,7 @@ ExtractProjectNameFromTitle(windowTitle) {
     }
 }
 
-; Функция для поиска проекта по frameTitle в recentProjects.xml
+; Р¤СѓРЅРєС†РёСЏ РґР»СЏ РїРѕРёСЃРєР° РїСЂРѕРµРєС‚Р° РїРѕ frameTitle РІ recentProjects.xml
 FindProjectByFrameTitle(projectName) {
     try {
         configPath := GetCurrentRecentProjectsPath()
@@ -198,13 +197,13 @@ FindProjectByFrameTitle(projectName) {
 
         FileRead, configContent, %configPath%
 
-        ; Ищем все RecentProjectMetaInfo записи с таким именем
+        ; РС‰РµРј РІСЃРµ RecentProjectMetaInfo Р·Р°РїРёСЃРё СЃ С‚Р°РєРёРј РёРјРµРЅРµРј
         allMatches := []
         pos := 1
         while (pos := RegExMatch(configContent, "i)<RecentProjectMetaInfo[^>]*frameTitle=""([^""]*)""\s+[^>]*>", match, pos)) {
             frameTitle := match1
 
-            ; Извлекаем первое слово из frameTitle
+            ; РР·РІР»РµРєР°РµРј РїРµСЂРІРѕРµ СЃР»РѕРІРѕ РёР· frameTitle
             spacePos := InStr(frameTitle, " ")
             frameTitleFirstWord := ""
             if (spacePos > 0) {
@@ -213,12 +212,12 @@ FindProjectByFrameTitle(projectName) {
                 frameTitleFirstWord := Trim(frameTitle)
             }
 
-            ; Проверяем, совпадает ли первое слово frameTitle с именем проекта
+            ; РџСЂРѕРІРµСЂСЏРµРј, СЃРѕРІРїР°РґР°РµС‚ Р»Рё РїРµСЂРІРѕРµ СЃР»РѕРІРѕ frameTitle СЃ РёРјРµРЅРµРј РїСЂРѕРµРєС‚Р°
             if (frameTitleFirstWord = projectName) {
-                ; Ищем соответствующий entry key (путь к проекту) перед этим тегом
+                ; РС‰РµРј СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёР№ entry key (РїСѓС‚СЊ Рє РїСЂРѕРµРєС‚Сѓ) РїРµСЂРµРґ СЌС‚РёРј С‚РµРіРѕРј
                 beforeMatch := SubStr(configContent, 1, pos - 1)
 
-                ; Ищем последний entry key перед нашим RecentProjectMetaInfo
+                ; РС‰РµРј РїРѕСЃР»РµРґРЅРёР№ entry key РїРµСЂРµРґ РЅР°С€РёРј RecentProjectMetaInfo
                 if (RegExMatch(beforeMatch, "i).*<entry key=""([^""]+)""", pathMatch)) {
                     projectPath := pathMatch1
                     if (FileExist(projectPath)) {
@@ -230,7 +229,7 @@ FindProjectByFrameTitle(projectName) {
             pos += StrLen(match)
         }
 
-        ; Возвращаем последний (самый свежий) найденный проект
+        ; Р’РѕР·РІСЂР°С‰Р°РµРј РїРѕСЃР»РµРґРЅРёР№ (СЃР°РјС‹Р№ СЃРІРµР¶РёР№) РЅР°Р№РґРµРЅРЅС‹Р№ РїСЂРѕРµРєС‚
         if (allMatches.Length() > 0) {
             lastMatch := allMatches[allMatches.Length()]
             return lastMatch.path
@@ -243,7 +242,7 @@ FindProjectByFrameTitle(projectName) {
     }
 }
 
-; Функция для получения последнего открытого проекта из конфигурации WebStorm
+; Р¤СѓРЅРєС†РёСЏ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РїРѕСЃР»РµРґРЅРµРіРѕ РѕС‚РєСЂС‹С‚РѕРіРѕ РїСЂРѕРµРєС‚Р° РёР· РєРѕРЅС„РёРіСѓСЂР°С†РёРё WebStorm
 GetRecentWebStormProject() {
     try {
         configPath := GetCurrentRecentProjectsPath()
@@ -254,7 +253,7 @@ GetRecentWebStormProject() {
 
         FileRead, configContent, %configPath%
 
-        ; Ищем все проекты в порядке
+        ; РС‰РµРј РІСЃРµ РїСЂРѕРµРєС‚С‹ РІ РїРѕСЂСЏРґРєРµ
         lastProject := ""
         pos := 1
         while (pos := RegExMatch(configContent, "i)<entry key=""([^""]+)""", projectMatch, pos)) {
@@ -262,7 +261,7 @@ GetRecentWebStormProject() {
             pos += StrLen(projectMatch)
         }
 
-        ; Возвращаем последний найденный проект
+        ; Р’РѕР·РІСЂР°С‰Р°РµРј РїРѕСЃР»РµРґРЅРёР№ РЅР°Р№РґРµРЅРЅС‹Р№ РїСЂРѕРµРєС‚
         if (lastProject != "" and FileExist(lastProject)) {
             return lastProject
         }
@@ -273,27 +272,27 @@ GetRecentWebStormProject() {
     }
 }
 
-; Функция для получения названия git ветки
+; Р¤СѓРЅРєС†РёСЏ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ РЅР°Р·РІР°РЅРёСЏ git РІРµС‚РєРё
 GetGitBranch(projectPath) {
     try {
-        ; Проверяем, существует ли .git директория
+        ; РџСЂРѕРІРµСЂСЏРµРј, СЃСѓС‰РµСЃС‚РІСѓРµС‚ Р»Рё .git РґРёСЂРµРєС‚РѕСЂРёСЏ
         if (!FileExist(projectPath . "\.git")) {
             return ""
         }
 
-        ; Выполняем git команду для получения текущей ветки
+        ; Р’С‹РїРѕР»РЅСЏРµРј git РєРѕРјР°РЅРґСѓ РґР»СЏ РїРѕР»СѓС‡РµРЅРёСЏ С‚РµРєСѓС‰РµР№ РІРµС‚РєРё
         RunWait, %ComSpec% /c cd /d "%projectPath%" && git branch --show-current > "%A_Temp%\git_branch.tmp", , Hide
 
-        ; Читаем результат из временного файла
+        ; Р§РёС‚Р°РµРј СЂРµР·СѓР»СЊС‚Р°С‚ РёР· РІСЂРµРјРµРЅРЅРѕРіРѕ С„Р°Р№Р»Р°
         FileRead, gitBranch, %A_Temp%\git_branch.tmp
 
-        ; Удаляем временный файл
+        ; РЈРґР°Р»СЏРµРј РІСЂРµРјРµРЅРЅС‹Р№ С„Р°Р№Р»
         FileDelete, %A_Temp%\git_branch.tmp
 
-        ; Очищаем от лишних символов
+        ; РћС‡РёС‰Р°РµРј РѕС‚ Р»РёС€РЅРёС… СЃРёРјРІРѕР»РѕРІ
         gitBranch := Trim(gitBranch, " `t`n`r")
 
-        ; Если команда выше не сработала, пробуем альтернативный способ
+        ; Р•СЃР»Рё РєРѕРјР°РЅРґР° РІС‹С€Рµ РЅРµ СЃСЂР°Р±РѕС‚Р°Р»Р°, РїСЂРѕР±СѓРµРј Р°Р»СЊС‚РµСЂРЅР°С‚РёРІРЅС‹Р№ СЃРїРѕСЃРѕР±
         if (gitBranch = "") {
             RunWait, %ComSpec% /c cd /d "%projectPath%" && git rev-parse --abbrev-ref HEAD > "%A_Temp%\git_branch2.tmp", , Hide
             FileRead, gitBranch, %A_Temp%\git_branch2.tmp
@@ -308,12 +307,12 @@ GetGitBranch(projectPath) {
     }
 }
 
-; Функция для извлечения имени проекта из пути
+; Р¤СѓРЅРєС†РёСЏ РґР»СЏ РёР·РІР»РµС‡РµРЅРёСЏ РёРјРµРЅРё РїСЂРѕРµРєС‚Р° РёР· РїСѓС‚Рё
 GetProjectName(projectPath) {
-    ; Убираем завершающий слэш если есть
+    ; РЈР±РёСЂР°РµРј Р·Р°РІРµСЂС€Р°СЋС‰РёР№ СЃР»СЌС€ РµСЃР»Рё РµСЃС‚СЊ
     projectPath := RTrim(projectPath, "\")
 
-    ; Извлекаем последний путь в папке как имя проекта
+    ; РР·РІР»РµРєР°РµРј РїРѕСЃР»РµРґРЅРёР№ РїСѓС‚СЊ РІ РїР°РїРєРµ РєР°Рє РёРјСЏ РїСЂРѕРµРєС‚Р°
     SplitPath, projectPath, projectName
 
     return projectName
