@@ -10,13 +10,12 @@ BORDER_COLOR := "FF4500"
 TRIPLE_TAP_MAX_GAP_MS := 400
 MAX_TAP_HOLD_MS := 300
 TOPMOST_REFRESH_MS := 250
-MICROPHONE_PRIVACY_REGISTRY_KEY := "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone"
 
-; Состояние микрофона и левой клавиши Ctrl.
+; Состояние микрофона и клавиши Right Ctrl.
 persistentUnmuted := false
 pushToTalkActive := false
-leftCtrlDown := false
-leftCtrlDownAt := 0
+rightCtrlDown := false
+rightCtrlDownAt := 0
 tapTimes := []
 currentLiveState := -1
 
@@ -29,39 +28,37 @@ audioErrorShown := false
 OnExit(HandleExit)
 SetLiveState(false)
 
-; Левый Ctrl запускает push-to-talk сразу, но только если микрофон сейчас используется приложением.
-~*LCtrl:: {
-    global leftCtrlDown, leftCtrlDownAt, persistentUnmuted, pushToTalkActive
+; Удержание Right Ctrl работает как push-to-talk, если не включен постоянный unmute.
+~*RControl:: {
+    global rightCtrlDown, rightCtrlDownAt, persistentUnmuted, pushToTalkActive
 
-    if leftCtrlDown {
+    if rightCtrlDown {
         return
     }
 
-    leftCtrlDown := true
-    leftCtrlDownAt := A_TickCount
+    rightCtrlDown := true
+    rightCtrlDownAt := A_TickCount
 
     if persistentUnmuted {
         return
     }
 
-    if IsMicrophoneCaptureActive() {
-        pushToTalkActive := true
-        SetLiveState(true)
-    }
+    pushToTalkActive := true
+    SetLiveState(true)
 }
 
-; Отпускание левого Ctrl либо регистрирует tap для triple-tap, либо возвращает mute.
-~*LCtrl Up:: {
-    global leftCtrlDown, leftCtrlDownAt, persistentUnmuted, pushToTalkActive, MAX_TAP_HOLD_MS
+; Отпускание Right Ctrl либо регистрирует tap для triple-tap, либо возвращает mute.
+~*RControl Up:: {
+    global rightCtrlDown, rightCtrlDownAt, persistentUnmuted, pushToTalkActive, MAX_TAP_HOLD_MS
 
-    if !leftCtrlDown {
+    if !rightCtrlDown {
         return
     }
 
-    wasTap := (A_TickCount - leftCtrlDownAt) <= MAX_TAP_HOLD_MS
-    leftCtrlDown := false
+    wasTap := (A_TickCount - rightCtrlDownAt) <= MAX_TAP_HOLD_MS
+    rightCtrlDown := false
 
-    if wasTap && RegisterLeftCtrlTap() {
+    if wasTap && RegisterRightCtrlTap() {
         return
     }
 
@@ -73,8 +70,8 @@ SetLiveState(false)
     SetLiveState(false)
 }
 
-; Считает три быстрых отпускания левого Ctrl и переключает постоянный unmute.
-RegisterLeftCtrlTap() {
+; Считает три быстрых отпускания Right Ctrl и переключает постоянный unmute.
+RegisterRightCtrlTap() {
     global tapTimes, TRIPLE_TAP_MAX_GAP_MS, persistentUnmuted, pushToTalkActive
 
     now := A_TickCount
@@ -94,85 +91,6 @@ RegisterLeftCtrlTap() {
     pushToTalkActive := false
     SetLiveState(persistentUnmuted)
     return true
-}
-
-; Проверяет Windows privacy registry: активный захват обычно имеет LastUsedTimeStop = 0.
-IsMicrophoneCaptureActive() {
-    global MICROPHONE_PRIVACY_REGISTRY_KEY
-
-    return HasActiveMicrophoneUsage(MICROPHONE_PRIVACY_REGISTRY_KEY)
-}
-
-HasActiveMicrophoneUsage(registryKey) {
-    if IsRegistryMicrophoneEntryActive(registryKey) {
-        return true
-    }
-
-    try {
-        Loop Reg, registryKey, "K" {
-            if HasActiveMicrophoneUsage(registryKey "\" A_LoopRegName) {
-                return true
-            }
-        }
-    }
-
-    return false
-}
-
-IsRegistryMicrophoneEntryActive(registryKey) {
-    startTime := RegReadQword(registryKey, "LastUsedTimeStart", 0)
-    stopTime := RegReadQword(registryKey, "LastUsedTimeStop", -1)
-
-    return Integer(startTime) > 0 && Integer(stopTime) == 0
-}
-
-; LastUsedTimeStart/Stop хранятся как REG_QWORD, поэтому читаем их через WinAPI.
-RegReadQword(registryKey, valueName, defaultValue := 0) {
-    rootAndSubkey := SplitRegistryKey(registryKey)
-    if !rootAndSubkey {
-        return defaultValue
-    }
-
-    data := Buffer(8, 0)
-    dataSize := 8
-    valueType := 0
-    status := DllCall("Advapi32\RegGetValueW"
-        , "Ptr", rootAndSubkey.Root
-        , "Str", rootAndSubkey.Subkey
-        , "Str", valueName
-        , "UInt", 0x40
-        , "UInt*", &valueType
-        , "Ptr", data
-        , "UInt*", &dataSize
-        , "UInt")
-
-    if status != 0 || valueType != 11 || dataSize != 8 {
-        return defaultValue
-    }
-
-    return NumGet(data, 0, "Int64")
-}
-
-SplitRegistryKey(registryKey) {
-    rootMap := Map(
-        "HKCU", 0x80000001,
-        "HKEY_CURRENT_USER", 0x80000001
-    )
-
-    separatorPos := InStr(registryKey, "\")
-    if !separatorPos {
-        return false
-    }
-
-    rootName := SubStr(registryKey, 1, separatorPos - 1)
-    if !rootMap.Has(rootName) {
-        return false
-    }
-
-    return {
-        Root: rootMap[rootName],
-        Subkey: SubStr(registryKey, separatorPos + 1)
-    }
 }
 
 ; Единая точка смены live/muted: звук и визуальная рамка всегда переключаются вместе.
