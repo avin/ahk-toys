@@ -3,6 +3,7 @@
 
 Persistent()
 
+; Настройки рамки и распознавания triple-tap.
 BORDER_THICKNESS := 5
 BORDER_OPACITY := Round(255 * 0.75)
 BORDER_COLOR := "FF4500"
@@ -10,12 +11,15 @@ TRIPLE_TAP_MAX_GAP_MS := 400
 MAX_TAP_HOLD_MS := 300
 TOPMOST_REFRESH_MS := 250
 
+; Состояние микрофона и клавиши Right Ctrl.
 persistentUnmuted := false
 pushToTalkActive := false
 rightCtrlDown := false
 rightCtrlDownAt := 0
 tapTimes := []
 currentLiveState := -1
+
+; Состояние оверлея-рамки.
 borderFrames := []
 borderVisible := false
 monitorSignature := ""
@@ -24,6 +28,7 @@ audioErrorShown := false
 OnExit(HandleExit)
 SetLiveState(false)
 
+; Удержание Right Ctrl работает как push-to-talk, если не включен постоянный unmute.
 ~*RControl:: {
     global rightCtrlDown, rightCtrlDownAt, persistentUnmuted, pushToTalkActive
 
@@ -42,6 +47,7 @@ SetLiveState(false)
     SetLiveState(true)
 }
 
+; Отпускание Right Ctrl либо регистрирует tap для triple-tap, либо возвращает mute.
 ~*RControl Up:: {
     global rightCtrlDown, rightCtrlDownAt, persistentUnmuted, pushToTalkActive, MAX_TAP_HOLD_MS
 
@@ -64,6 +70,7 @@ SetLiveState(false)
     SetLiveState(false)
 }
 
+; Считает три быстрых отпускания Right Ctrl и переключает постоянный unmute.
 RegisterRightCtrlTap() {
     global tapTimes, TRIPLE_TAP_MAX_GAP_MS, persistentUnmuted, pushToTalkActive
 
@@ -86,6 +93,7 @@ RegisterRightCtrlTap() {
     return true
 }
 
+; Единая точка смены live/muted: звук и визуальная рамка всегда переключаются вместе.
 SetLiveState(isLive) {
     global currentLiveState
 
@@ -101,6 +109,7 @@ SetLiveState(isLive) {
     SetBorderVisible(isLive)
 }
 
+; Сначала пробуем стандартное устройство Microphone, затем fallback по устройствам и capture-контролам.
 SetMicrophoneMuted(muted) {
     if TrySetDeviceMute(muted, , "Microphone") {
         return true
@@ -133,6 +142,7 @@ SetMicrophoneMuted(muted) {
     return changed
 }
 
+; SoundSetMute бросает исключения, если устройство или контрол не поддерживает mute.
 TrySetDeviceMute(muted, component?, device?) {
     try {
         if IsSet(component) && IsSet(device) {
@@ -150,6 +160,7 @@ TrySetDeviceMute(muted, component?, device?) {
     }
 }
 
+; Простая эвристика для fallback-поиска микрофона среди аудиоустройств.
 IsLikelyMicrophoneDevice(deviceName) {
     name := StrLower(deviceName)
     return InStr(name, "microphone")
@@ -158,6 +169,7 @@ IsLikelyMicrophoneDevice(deviceName) {
         || InStr(name, "array")
 }
 
+; Показываем ошибку только один раз, чтобы не спамить уведомлениями при каждом нажатии.
 ShowAudioErrorOnce() {
     global audioErrorShown
 
@@ -169,6 +181,7 @@ ShowAudioErrorOnce() {
     TrayTip("mic-mute", "Failed to change microphone mute state.", 0x11)
 }
 
+; Включает или уничтожает рамку и таймер, который удерживает ее поверх окон.
 SetBorderVisible(visible) {
     global borderVisible, TOPMOST_REFRESH_MS
 
@@ -187,6 +200,7 @@ SetBorderVisible(visible) {
     }
 }
 
+; Рамка строится отдельными тонкими GUI-полосами на каждом мониторе.
 DrawBorder() {
     global borderFrames, monitorSignature, BORDER_THICKNESS
 
@@ -210,6 +224,7 @@ DrawBorder() {
     }
 }
 
+; Одна click-through topmost полоса рамки.
 AddFrame(x, y, width, height) {
     global borderFrames, BORDER_COLOR, BORDER_OPACITY
 
@@ -224,6 +239,7 @@ AddFrame(x, y, width, height) {
     borderFrames.Push(frame)
 }
 
+; Удаляет все GUI-полосы рамки.
 DestroyBorder() {
     global borderFrames
 
@@ -234,6 +250,7 @@ DestroyBorder() {
     borderFrames := []
 }
 
+; Периодически переутверждает topmost и пересоздает рамку при смене конфигурации мониторов.
 KeepBorderOnTop() {
     global borderVisible, borderFrames, monitorSignature
 
@@ -258,6 +275,7 @@ KeepBorderOnTop() {
     }
 }
 
+; Снимок текущей геометрии мониторов для обнаружения переподключения или смены разрешения.
 GetMonitorSignature() {
     signature := ""
     monitorCount := MonitorGetCount()
@@ -270,6 +288,7 @@ GetMonitorSignature() {
     return signature
 }
 
+; При выходе убираем рамку и возвращаем микрофон в безопасное muted-состояние.
 HandleExit(*) {
     SetTimer(KeepBorderOnTop, 0)
     DestroyBorder()
