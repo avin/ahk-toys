@@ -12,11 +12,12 @@ MAX_TAP_HOLD_MS := 300
 TOPMOST_REFRESH_MS := 250
 MICROPHONE_PRIVACY_REGISTRY_KEY := "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\microphone"
 
-; Состояние микрофона и левой клавиши Ctrl.
+; Состояние микрофона и сочетания LCtrl+Win.
 persistentUnmuted := false
 pushToTalkActive := false
-leftCtrlDown := false
-leftCtrlDownAt := 0
+lCtrlWinDown := false
+lCtrlWinDownAt := 0
+suppressWinUp := false
 tapTimes := []
 currentLiveState := -1
 
@@ -29,16 +30,44 @@ audioErrorShown := false
 OnExit(HandleExit)
 SetLiveState(false)
 
-; Левый Ctrl запускает push-to-talk сразу, но только если микрофон сейчас используется приложением.
+; LCtrl+Win запускает push-to-talk сразу, но только если микрофон сейчас используется приложением.
 ~*LCtrl:: {
-    global leftCtrlDown, leftCtrlDownAt, persistentUnmuted, pushToTalkActive
+    HandleLCtrlWinDown()
+}
 
-    if leftCtrlDown {
+~*LWin:: {
+    HandleLCtrlWinDown()
+}
+
+~*RWin:: {
+    HandleLCtrlWinDown()
+}
+
+#HotIf suppressWinUp
+*LWin Up:: {
+    HandleWinUp()
+}
+
+*RWin Up:: {
+    HandleWinUp()
+}
+#HotIf
+
+; Отпускание любой клавиши из LCtrl+Win либо регистрирует tap для triple-tap, либо возвращает mute.
+~*LCtrl Up:: {
+    HandleLCtrlWinUp()
+}
+
+HandleLCtrlWinDown() {
+    global lCtrlWinDown, lCtrlWinDownAt, suppressWinUp, persistentUnmuted, pushToTalkActive
+
+    if lCtrlWinDown || !IsLCtrlWinDown() {
         return
     }
 
-    leftCtrlDown := true
-    leftCtrlDownAt := A_TickCount
+    lCtrlWinDown := true
+    lCtrlWinDownAt := A_TickCount
+    suppressWinUp := true
 
     if persistentUnmuted {
         return
@@ -50,18 +79,17 @@ SetLiveState(false)
     }
 }
 
-; Отпускание левого Ctrl либо регистрирует tap для triple-tap, либо возвращает mute.
-~*LCtrl Up:: {
-    global leftCtrlDown, leftCtrlDownAt, persistentUnmuted, pushToTalkActive, MAX_TAP_HOLD_MS
+HandleLCtrlWinUp() {
+    global lCtrlWinDown, lCtrlWinDownAt, persistentUnmuted, pushToTalkActive, MAX_TAP_HOLD_MS
 
-    if !leftCtrlDown {
+    if !lCtrlWinDown || IsLCtrlWinDown() {
         return
     }
 
-    wasTap := (A_TickCount - leftCtrlDownAt) <= MAX_TAP_HOLD_MS
-    leftCtrlDown := false
+    wasTap := (A_TickCount - lCtrlWinDownAt) <= MAX_TAP_HOLD_MS
+    lCtrlWinDown := false
 
-    if wasTap && RegisterLeftCtrlTap() {
+    if wasTap && RegisterLCtrlWinTap() {
         return
     }
 
@@ -73,8 +101,26 @@ SetLiveState(false)
     SetLiveState(false)
 }
 
-; Считает три быстрых отпускания левого Ctrl и переключает постоянный unmute.
-RegisterLeftCtrlTap() {
+HandleWinUp() {
+    HandleLCtrlWinUp()
+    ClearWinUpSuppressionIfReleased()
+}
+
+ClearWinUpSuppressionIfReleased() {
+    global suppressWinUp
+
+    if !GetKeyState("LWin", "P") && !GetKeyState("RWin", "P") {
+        suppressWinUp := false
+    }
+}
+
+IsLCtrlWinDown() {
+    return GetKeyState("LCtrl", "P")
+        && (GetKeyState("LWin", "P") || GetKeyState("RWin", "P"))
+}
+
+; Считает три быстрых отпускания LCtrl+Win и переключает постоянный unmute.
+RegisterLCtrlWinTap() {
     global tapTimes, TRIPLE_TAP_MAX_GAP_MS, persistentUnmuted, pushToTalkActive
 
     now := A_TickCount
