@@ -9,15 +9,27 @@ weztermClass := "ahk-wezterm-dropdown"
 weztermWindow := 0
 
 StartWezTerm(false)
+SetTimer(WatchWezTermWindow, 100)
 
 !Space::ToggleWezTerm()
+
+WatchWezTermWindow() {
+    global weztermWindow
+
+    if !IsWindow(weztermWindow)
+        return
+
+    if DllCall("IsWindowVisible", "Ptr", weztermWindow, "Int")
+        && DllCall("IsIconic", "Ptr", weztermWindow, "Int")
+        WinHide("ahk_id " weztermWindow)
+}
 
 ToggleWezTerm() {
     global weztermWindow
 
     if !IsWindow(weztermWindow) {
-        if !StartWezTerm(true)
-            return
+        StartWezTerm(true)
+        return
     }
 
     if DllCall("IsWindowVisible", "Ptr", weztermWindow, "Int") {
