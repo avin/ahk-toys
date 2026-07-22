@@ -11,7 +11,7 @@ SendMode("Input")
 ; Имя процесса можно посмотреть:
 ; Диспетчер задач → Подробности → Имя образа.
 
-TARGET_EXES := ["opencode.exe"]
+TARGET_EXES := ["opencode.exe", "ChatGPT.exe"]
 
 ; Английская раскладка США — 00000409.
 ; KLF_SUBSTITUTE_OK = 0x00000002.

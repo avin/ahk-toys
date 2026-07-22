@@ -16,6 +16,10 @@ SetTimer(WatchWezTermWindow, 100)
 
 !Space::ToggleWezTerm()
 
+#HotIf IsPointerOverWezTermHideButton()
+LButton::HideWezTermFromTitleBar()
+#HotIf
+
 WatchWezTermWindow() {
     global weztermWindow, trackWindowGeometry
 
@@ -51,6 +55,71 @@ ToggleWezTerm() {
         WinRestore("ahk_id " weztermWindow)
 
     WinActivate("ahk_id " weztermWindow)
+}
+
+IsPointerOverWezTermHideButton() {
+    global weztermWindow
+
+    if !IsWindow(weztermWindow)
+        return false
+
+    cursorPosition := Buffer(8)
+    if !DllCall("GetCursorPos", "Ptr", cursorPosition, "Int")
+        return false
+
+    mouseX := NumGet(cursorPosition, 0, "Int")
+    mouseY := NumGet(cursorPosition, 4, "Int")
+    windowUnderPointer := DllCall(
+        "WindowFromPoint",
+        "Int64", NumGet(cursorPosition, 0, "Int64"),
+        "Ptr"
+    )
+    rootWindow := DllCall("GetAncestor", "Ptr", windowUnderPointer, "UInt", 2, "Ptr")
+
+    if rootWindow != weztermWindow
+        return false
+
+    windowRect := Buffer(16)
+    if !DllCall("GetWindowRect", "Ptr", weztermWindow, "Ptr", windowRect, "Int")
+        return false
+
+    captionButtons := Buffer(16)
+    hResult := DllCall(
+        "dwmapi\DwmGetWindowAttribute",
+        "Ptr", weztermWindow,
+        "UInt", 5,
+        "Ptr", captionButtons,
+        "UInt", captionButtons.Size,
+        "Int"
+    )
+
+    if hResult != 0
+        return false
+
+    windowLeft := NumGet(windowRect, 0, "Int")
+    windowTop := NumGet(windowRect, 4, "Int")
+    buttonsLeft := windowLeft + NumGet(captionButtons, 0, "Int")
+    buttonsTop := windowTop + NumGet(captionButtons, 4, "Int")
+    buttonsRight := windowLeft + NumGet(captionButtons, 8, "Int")
+    buttonsBottom := windowTop + NumGet(captionButtons, 12, "Int")
+    buttonWidth := Ceil((buttonsRight - buttonsLeft) / 3)
+
+    if mouseY < buttonsTop || mouseY >= buttonsBottom
+        return false
+
+    isMinimizeButton := mouseX >= buttonsLeft
+        && mouseX < buttonsLeft + buttonWidth
+    isCloseButton := mouseX >= buttonsRight - buttonWidth
+        && mouseX < buttonsRight
+
+    return isMinimizeButton || isCloseButton
+}
+
+HideWezTermFromTitleBar() {
+    global weztermWindow
+
+    if IsWindow(weztermWindow)
+        WinHide("ahk_id " weztermWindow)
 }
 
 StartWezTerm(showAfterStart := false) {
