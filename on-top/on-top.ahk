@@ -1,51 +1,69 @@
-; Win+Shift+F5 — закрепить/снять окно (always on top + opacity + click-through)
-; Win+Shift+PgUp/PgDn — изменить opacity (только пока окно закреплено)
+; =============================================================================
+; on-top — «прозрачное окно поверх всех»
+;
+; Закрепляет одно окно: always-on-top + полупрозрачность + клики проходят сквозь
+; (WS_EX_TRANSPARENT). Повторное закрепление снимает предыдущее, даже если фокус
+; уже на другом окне.
+;
+; Хоткеи:
+;   Win+Shift+F5       — закрепить активное / снять закреплённое
+;   Win+Shift+PgUp     — opacity +5%  (только пока есть закреплённое окно)
+;   Win+Shift+PgDn     — opacity −5%  (иначе сочетание не перехватывается)
+;
+; Удержание PgUp/PgDn повторяет шаг. Звуки: ↑↓ две ноты на pin/unpin,
+; одна нота на смену opacity.
+; =============================================================================
 
 #Requires AutoHotkey v2.0
-#SingleInstance Force
+#SingleInstance Force ; одна копия скрипта; перезапуск заменяет старую
 
 SetWorkingDir(A_ScriptDir)
-A_MenuMaskKey := "vkE8"
+A_MenuMaskKey := "vkE8" ; маска, чтобы Win-хоткеи не открывали меню Пуск
 
-pinnedWin := 0
-pinnedOpacity := 75 ; процент 5–100
+; --- состояние ---
+pinnedWin := 0          ; HWND закреплённого окна (0 = ничего не закреплено)
+pinnedOpacity := 75     ; текущая прозрачность в % (диапазон 5–100)
 
+; Есть ли живое закреплённое окно?
 IsPinnedActive() {
     global pinnedWin
     return pinnedWin && WinExist("ahk_id " pinnedWin)
 }
 
+; --- Win+Shift+F5: toggle закрепления ---
 #+F5:: {
     global pinnedWin, pinnedOpacity
     SuppressWinMenu()
 
-    ; Если уже есть закреплённое окно — снимаем его
+    ; Уже что-то закреплено → снимаем (независимо от текущего фокуса)
     if IsPinnedActive() {
         WinSetAlwaysOnTop(false, pinnedWin)
         WinSetTransparent("Off", pinnedWin)
-        WinSetExStyle("-0x20", pinnedWin)
+        WinSetExStyle("-0x20", pinnedWin) ; убрать click-through
         pinnedWin := 0
-        SoundBeep(720, 90)
+        SoundBeep(720, 90)  ; две ноты вниз — выключение
         SoundBeep(480, 120)
         return
     }
 
-    ; Иначе закрепляем активное окно
+    ; Иначе закрепляем окно под фокусом
     pinnedWin := WinGetID("A")
     pinnedOpacity := 75
     ApplyOpacity(pinnedWin, pinnedOpacity)
     WinSetAlwaysOnTop(true, pinnedWin)
-    WinSetExStyle("+0x20", pinnedWin) ; Пропуск кликов
-    SoundBeep(480, 90)
+    WinSetExStyle("+0x20", pinnedWin) ; click-through: клики идут в окна под ним
+    SoundBeep(480, 90)  ; две ноты вверх — включение
     SoundBeep(720, 120)
 }
 
-; Хоткеи opacity активны только при закреплённом окне — иначе сочетание не перехватывается
+; --- opacity: хоткеи живут только при активном pin ---
 #HotIf IsPinnedActive()
 
 #+PgUp:: {
     SuppressWinMenu()
     ChangeOpacity(5)
+    ; Короткое нажатие: KeyWait успевает до таймаута → выход
+    ; Удержание: после 0.3 с крутим шаг, пока клавиша зажата
     if KeyWait("PgUp", "T0.3") {
         SuppressWinMenu()
         return
@@ -75,27 +93,27 @@ IsPinnedActive() {
     SuppressWinMenu()
 }
 
-#HotIf
+#HotIf ; снять условие — дальше обычные хоткеи/код
 
-; Чтобы Win не открывал Пуск после хоткея
+; Погасить «одиночный Win» после хоткея (иначе Windows открывает Пуск)
 SuppressWinMenu() {
     Send("{Blind}{vkE8}")
 }
 
+; Сдвиг opacity на delta процентов (±5) с клампом и звуком
 ChangeOpacity(delta) {
     global pinnedWin, pinnedOpacity
     if !IsPinnedActive()
         return
     newOpacity := Min(100, Max(5, pinnedOpacity + delta))
     if newOpacity = pinnedOpacity
-        return
+        return ; упирались в край диапазона — ничего не делаем
     pinnedOpacity := newOpacity
     ApplyOpacity(pinnedWin, pinnedOpacity)
-    ; выше на повышение, ниже на понижение
-    SoundBeep(delta > 0 ? 880 : 440, 40)
+    SoundBeep(delta > 0 ? 880 : 440, 40) ; выше = +, ниже = −
 }
 
+; Процент 0–100 → WinSetTransparent 0–255 (255 = полностью непрозрачно)
 ApplyOpacity(winId, pct) {
-    ; 100% → 255 (непрозрачно), 0% → 0
     WinSetTransparent(Round(pct / 100 * 255), winId)
 }
