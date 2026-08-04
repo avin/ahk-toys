@@ -1,111 +1,101 @@
 ; Win+Shift+F5 — закрепить/снять окно (always on top + opacity + click-through)
 ; Win+Shift+PgUp/PgDn — изменить opacity (только пока окно закреплено)
 
-#NoEnv
+#Requires AutoHotkey v2.0
 #SingleInstance Force
-#Persistent
-#KeyHistory 0
-ListLines Off
-SendMode Input
-SetBatchLines -1
-SetWorkingDir %A_ScriptDir%
-#MenuMaskKey vkE8
+
+SetWorkingDir(A_ScriptDir)
+A_MenuMaskKey := "vkE8"
 
 pinnedWin := 0
 pinnedOpacity := 75 ; процент 5–100
 
-#+F5::
-global pinnedWin, pinnedOpacity
-SuppressWinMenu()
-
-; Если уже есть закреплённое окно — снимаем его
-if (pinnedWin && WinExist("ahk_id " . pinnedWin)) {
-    WinSet, AlwaysOnTop, OFF, ahk_id %pinnedWin%
-    WinSet, Transparent, OFF, ahk_id %pinnedWin%
-    WinSet, ExStyle, -0x20, ahk_id %pinnedWin%
-    pinnedWin := 0
-    SoundBeep, 720, 90
-    SoundBeep, 480, 120
-    return
+IsPinnedActive() {
+    global pinnedWin
+    return pinnedWin && WinExist("ahk_id " pinnedWin)
 }
 
-; Иначе закрепляем активное окно
-WinGet, id1, ID, A
-pinnedOpacity := 75
-ApplyOpacity(id1, pinnedOpacity)
-WinSet, AlwaysOnTop, ON, ahk_id %id1%
-WinSet, ExStyle, +0x20, ahk_id %id1% ; Пропуск кликов
-pinnedWin := id1
-SoundBeep, 480, 90
-SoundBeep, 720, 120
-return
+#+F5:: {
+    global pinnedWin, pinnedOpacity
+    SuppressWinMenu()
+
+    ; Если уже есть закреплённое окно — снимаем его
+    if IsPinnedActive() {
+        WinSetAlwaysOnTop(false, pinnedWin)
+        WinSetTransparent("Off", pinnedWin)
+        WinSetExStyle("-0x20", pinnedWin)
+        pinnedWin := 0
+        SoundBeep(720, 90)
+        SoundBeep(480, 120)
+        return
+    }
+
+    ; Иначе закрепляем активное окно
+    pinnedWin := WinGetID("A")
+    pinnedOpacity := 75
+    ApplyOpacity(pinnedWin, pinnedOpacity)
+    WinSetAlwaysOnTop(true, pinnedWin)
+    WinSetExStyle("+0x20", pinnedWin) ; Пропуск кликов
+    SoundBeep(480, 90)
+    SoundBeep(720, 120)
+}
 
 ; Хоткеи opacity активны только при закреплённом окне — иначе сочетание не перехватывается
-#If pinnedWin && WinExist("ahk_id " . pinnedWin)
+#HotIf IsPinnedActive()
 
-#+PgUp::
-SuppressWinMenu()
-ChangeOpacity(5)
-KeyWait, PgUp, T0.3
-if (ErrorLevel = 0) {
+#+PgUp:: {
     SuppressWinMenu()
-    return
-}
-While GetKeyState("PgUp", "P") {
-    if (!(pinnedWin && WinExist("ahk_id " . pinnedWin)))
-        break
     ChangeOpacity(5)
-    Sleep, 100
-}
-SuppressWinMenu()
-return
-
-#+PgDn::
-SuppressWinMenu()
-ChangeOpacity(-5)
-KeyWait, PgDn, T0.3
-if (ErrorLevel = 0) {
+    if KeyWait("PgUp", "T0.3") {
+        SuppressWinMenu()
+        return
+    }
+    while GetKeyState("PgUp", "P") {
+        if !IsPinnedActive()
+            break
+        ChangeOpacity(5)
+        Sleep(100)
+    }
     SuppressWinMenu()
-    return
 }
-While GetKeyState("PgDn", "P") {
-    if (!(pinnedWin && WinExist("ahk_id " . pinnedWin)))
-        break
-    ChangeOpacity(-5)
-    Sleep, 100
-}
-SuppressWinMenu()
-return
 
-#If
+#+PgDn:: {
+    SuppressWinMenu()
+    ChangeOpacity(-5)
+    if KeyWait("PgDn", "T0.3") {
+        SuppressWinMenu()
+        return
+    }
+    while GetKeyState("PgDn", "P") {
+        if !IsPinnedActive()
+            break
+        ChangeOpacity(-5)
+        Sleep(100)
+    }
+    SuppressWinMenu()
+}
+
+#HotIf
 
 ; Чтобы Win не открывал Пуск после хоткея
 SuppressWinMenu() {
-    Send {Blind}{vkE8}
+    Send("{Blind}{vkE8}")
 }
 
 ChangeOpacity(delta) {
     global pinnedWin, pinnedOpacity
-    if (!(pinnedWin && WinExist("ahk_id " . pinnedWin)))
+    if !IsPinnedActive()
         return
-    newOpacity := pinnedOpacity + delta
-    if (newOpacity > 100)
-        newOpacity := 100
-    if (newOpacity < 5)
-        newOpacity := 5
-    if (newOpacity = pinnedOpacity)
+    newOpacity := Min(100, Max(5, pinnedOpacity + delta))
+    if newOpacity = pinnedOpacity
         return
     pinnedOpacity := newOpacity
     ApplyOpacity(pinnedWin, pinnedOpacity)
     ; выше на повышение, ниже на понижение
-    if (delta > 0)
-        SoundBeep, 880, 40
-    else
-        SoundBeep, 440, 40
+    SoundBeep(delta > 0 ? 880 : 440, 40)
 }
 
 ApplyOpacity(winId, pct) {
     ; 100% → 255 (непрозрачно), 0% → 0
-    level := Round(pct / 100 * 255)
-    WinSet, Transparent, %level%, ahk_id %winId%
+    WinSetTransparent(Round(pct / 100 * 255), winId)
 }
