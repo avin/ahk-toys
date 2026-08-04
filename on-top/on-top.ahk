@@ -1,11 +1,22 @@
 ; Win+Shift+F5 — закрепить/снять окно (always on top + opacity + click-through)
 ; Win+Shift+PgUp/PgDn — изменить opacity (только пока окно закреплено)
 
+#NoEnv
+#SingleInstance Force
+#Persistent
+#KeyHistory 0
+ListLines Off
+SendMode Input
+SetBatchLines -1
+SetWorkingDir %A_ScriptDir%
+#MenuMaskKey vkE8
+
 pinnedWin := 0
 pinnedOpacity := 75 ; процент 5–100
 
 #+F5::
 global pinnedWin, pinnedOpacity
+SuppressWinMenu()
 
 ; Если уже есть закреплённое окно — снимаем его
 if (pinnedWin && WinExist("ahk_id " . pinnedWin)) {
@@ -33,32 +44,45 @@ return
 #If pinnedWin && WinExist("ahk_id " . pinnedWin)
 
 #+PgUp::
+SuppressWinMenu()
 ChangeOpacity(5)
 KeyWait, PgUp, T0.3
-if (ErrorLevel = 0)
+if (ErrorLevel = 0) {
+    SuppressWinMenu()
     return
+}
 While GetKeyState("PgUp", "P") {
     if (!(pinnedWin && WinExist("ahk_id " . pinnedWin)))
         break
     ChangeOpacity(5)
     Sleep, 100
 }
+SuppressWinMenu()
 return
 
 #+PgDn::
+SuppressWinMenu()
 ChangeOpacity(-5)
 KeyWait, PgDn, T0.3
-if (ErrorLevel = 0)
+if (ErrorLevel = 0) {
+    SuppressWinMenu()
     return
+}
 While GetKeyState("PgDn", "P") {
     if (!(pinnedWin && WinExist("ahk_id " . pinnedWin)))
         break
     ChangeOpacity(-5)
     Sleep, 100
 }
+SuppressWinMenu()
 return
 
 #If
+
+; Чтобы Win не открывал Пуск после хоткея
+SuppressWinMenu() {
+    Send {Blind}{vkE8}
+}
 
 ChangeOpacity(delta) {
     global pinnedWin, pinnedOpacity
