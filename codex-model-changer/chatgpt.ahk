@@ -202,8 +202,11 @@ SwitchPreset(modelName, effortName)
 
         ActivateUIA(targetEffort)
 
-        ; После выбора Radix-меню иногда остаётся открытым.
+        ; Закрываем меню
         Sleep 50
+        Send "{Esc}"
+        ; Возвращаем фокус на инпут
+        Sleep 150
         Send "{Esc}"
 
 
