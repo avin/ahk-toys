@@ -202,6 +202,10 @@ SwitchPreset(modelName, effortName)
 
         ActivateUIA(targetEffort)
 
+        ; После выбора Radix-меню иногда остаётся открытым.
+        Sleep 50
+        Send "{Esc}"
+
 
         ; ====================================================
         ; Успех
