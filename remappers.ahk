@@ -10,16 +10,5 @@ SetWorkingDir A_ScriptDir
         SendInput "^!+q"
 }
 
-; ; Для gInk (требуется убрать хоткей ctrl+alt+g в google-disk)
-; ^MButton:: {
-;     SendInput "{Ctrl down}{Alt down}g{Ctrl up}{Alt up}"
-; }
-
-; ; Переназначаем F1 на Alt+S только для Google Chrome
-; F1:: {
-;     if WinActive("ahk_exe chrome.exe") {
-;         Send "!s"
-;     } else {
-;         Send "{F1}"
-;     }
-; }
+; Pause → Ctrl+Alt+Shift+W
+Pause::SendInput "^!+w"
