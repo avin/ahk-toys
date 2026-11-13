@@ -12,3 +12,6 @@ SetWorkingDir A_ScriptDir
 
 ; Pause → Ctrl+Alt+Shift+W
 Pause::SendInput "^!+w"
+
+; Одиночный CapsLock (F15 из Capsicain) → Alt+Shift
+F15::SendInput "{LAlt down}{LShift down}{LShift up}{LAlt up}"
