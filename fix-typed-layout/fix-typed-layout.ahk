@@ -1,9 +1,8 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 
-#Include ..\codex-model-changer\Lib\UIA.ahk
-
 idleMs := 3000
+excludedProcesses := ["wezterm-gui.exe"]
 layouts := Map()
 count := DllCall("GetKeyboardLayoutList", "Int", 0, "Ptr", 0, "Int")
 handles := Buffer(count * A_PtrSize)
@@ -36,9 +35,16 @@ $^Left:: {
 #HotIf
 
 HasRecentFragment() {
-    global fragment, idleMs
-    return fragment && A_TickCount - fragment.tick < idleMs
-        && fragment.typed !== fragment.corrected && WinActive("ahk_id " fragment.window)
+    global fragment, idleMs, excludedProcesses
+    if !fragment || A_TickCount - fragment.tick >= idleMs
+        || fragment.typed == fragment.corrected || !WinActive("ahk_id " fragment.window)
+        return false
+
+    for process in excludedProcesses {
+        if WinActive("ahk_id " fragment.window " ahk_exe " process)
+            return false
+    }
+    return true
 }
 
 ResetFragment() {
@@ -126,53 +132,50 @@ CorrectFragment() {
     if !entry || !ContextMatches(entry, entry.layout)
         return false
 
-    ; Выделяем диапазон только после сверки текста перед курсором через UI Automation.
+    ; Ctrl+Insert копирует выделение и не посылает терминалу Ctrl+C.
+    copySequence := 0
+    restoreClipboard := false
     try {
-        field := UIA.GetFocusedElement()
-        if field.IsPassword || !field.IsEnabled
-            return false
-        selections := field.TextPattern.GetSelection()
-        if selections.Length != 1
-            return false
-        range := selections[1]
-        if range.CompareEndpoints("Start", range, "End") != 0
-            return false
-        length := StrLen(entry.typed)
-        if range.MoveEndpointByUnit("Start", "Character", -length) != -length
-            || range.GetText() !== entry.typed || range.GetAttributeValue(UIA.TextAttribute.IsReadOnly) !== 0
-            return false
-
+        savedClipboard := ClipboardAll()
+        beforeCopy := ClipboardSequence()
+        SendInput("+{Left " StrLen(entry.typed) "}")
+        Sleep(60)
         if !ContextMatches(entry, entry.layout)
             return false
-        PostMessage(0x0050, 0, entry.target, , "ahk_id " entry.focus) ; WM_INPUTLANGCHANGEREQUEST
-        deadline := A_TickCount + 150
-        while ThreadLayout(entry.thread) != entry.target && A_TickCount < deadline
+
+        SendEvent("^{Insert}")
+        deadline := A_TickCount + 250
+        while (copySequence := ClipboardSequence()) = beforeCopy && A_TickCount < deadline
             Sleep(5)
-        if !ContextMatches(entry, entry.target) || !UIA.CompareElements(field, UIA.GetFocusedElement())
+        if copySequence = beforeCopy
             return false
 
-        selections := field.TextPattern.GetSelection()
-        if selections.Length != 1 || selections[1].CompareEndpoints("Start", selections[1], "End") != 0
-            || range.CompareEndpoints("End", selections[1], "Start") != 0
+        owner := DllCall("GetClipboardOwner", "Ptr")
+        restoreClipboard := owner && WindowProcess(owner) = WindowProcess(entry.window)
+        if !restoreClipboard || A_Clipboard !== entry.typed || ClipboardSequence() != copySequence
+            || !ContextMatches(entry, entry.layout)
             return false
-        range.Select()
-        ; Chrome применяет выделение асинхронно.
-        deadline := A_TickCount + 150
-        loop {
-            selections := field.TextPattern.GetSelection()
-            if selections.Length = 1 && range.Compare(selections[1]) && selections[1].GetText() == entry.typed
-                break
-            if A_TickCount >= deadline
-                return false
-            Sleep(5)
-        }
-        if !ContextMatches(entry, entry.target) || !UIA.CompareElements(field, UIA.GetFocusedElement())
-            return false
+
         SendText(entry.corrected)
-        return true
     } catch {
         return false
+    } finally {
+        ; Оставляем более позднее копирование пользователя в буфере.
+        if restoreClipboard && ClipboardSequence() = copySequence
+            try A_Clipboard := savedClipboard
     }
+
+    if ContextMatches(entry, entry.layout)
+        try PostMessage(0x0050, 0, entry.target, , "ahk_id " entry.focus) ; WM_INPUTLANGCHANGEREQUEST
+    return true
+}
+
+ClipboardSequence() => DllCall("GetClipboardSequenceNumber", "UInt")
+
+WindowProcess(hwnd) {
+    process := 0
+    DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "UInt*", &process, "UInt")
+    return process
 }
 
 ContextMatches(entry, layout) {
