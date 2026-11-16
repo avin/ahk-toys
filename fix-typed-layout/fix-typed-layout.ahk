@@ -14,7 +14,8 @@ if !layouts.Has(0x0409) || !layouts.Has(0x0419)
     throw Error("Для исправления текста нужны раскладки English (US) и Русская.")
 
 fragment := 0
-input := InputHook("V I1")
+; L0 отключает внутренний буфер InputHook и завершение при его заполнении.
+input := InputHook("V I1 L0")
 input.KeyOpt("{All}", "N")
 input.OnKeyDown := TrackInput
 input.Start()
@@ -26,13 +27,16 @@ input.Start()
 ~*XButton2::ResetFragment()
 
 #HotIf HasRecentFragment()
-$^Left:: {
+$^Left::CorrectOrForward("^{Left}")
+$!Left::CorrectOrForward("!{Left}")
+#HotIf
+
+CorrectOrForward(shortcut) {
     Critical()
     lastWindow := WinExist("A")
     if !CorrectFragment() && WinExist("A") = lastWindow
-        Send("^{Left}")
+        Send(shortcut)
 }
-#HotIf
 
 HasRecentFragment() {
     global fragment, idleMs, excludedProcesses
